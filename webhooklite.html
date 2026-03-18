@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webhook消息发送器 - 简化版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#475569',
+                        accent: '#f59e0b',
+                        success: '#10b981',
+                        danger: '#ef4444',
+                        light: '#f8fafc',
+                        dark: '#1e293b'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .tab-active {
+                @apply border-primary text-primary bg-primary/5;
+            }
+            .input-focus {
+                @apply focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none;
+            }
+            .btn-hover {
+                @apply hover:shadow-lg transition-all duration-200;
+            }
+            .attachment-item {
+                @apply relative w-20 h-20 rounded-lg overflow-hidden border-2 border-dashed border-gray-300 hover:border-primary/70 transition-colors bg-gray-50;
+            }
+            .attachment-preview {
+                @apply w-full h-full object-cover;
+            }
+            .attachment-remove {
+                @apply absolute -top-2 -right-2 w-6 h-6 rounded-full bg-danger text-white flex items-center justify-center cursor-pointer opacity-0 hover:opacity-100 transition-opacity z-10;
+            }
+            .attachment-item:hover .attachment-remove {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gray-50 min-h-screen">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+                    <i class="fa fa-paper-plane text-white text-xl"></i>
+                </div>
+                <h1 class="text-xl font-bold text-gray-800">Webhook 消息发送器</h1>
+                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">简化版</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="openAddModal()" class="flex items-center space-x-1 px-3 py-2 bg-primary text-white rounded-lg btn-hover">
+                    <i class="fa fa-plus text-sm"></i>
+                    <span>添加 Webhook</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- Webhook 标签栏 -->
+        <div class="mb-6">
+            <div class="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-hide">
+                <div id="webhookTabs" class="flex space-x-1">
+                    <!-- 标签将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 消息发送区域 -->
+        <div id="messageArea" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hidden">
+            <div class="mb-4">
+                <label for="messageInput" class="block text-sm font-medium text-gray-700 mb-2">消息内容</label>
+                <div class="relative">
+                    <textarea 
+                        id="messageInput" 
+                        class="w-full min-h-[150px] px-4 py-3 border border-gray-300 rounded-lg input-focus resize-none transition-all"
+                        placeholder="请输入要发送的消息内容..."
+                        rows="4"
+                    ></textarea>
+                    <div class="absolute bottom-3 right-3 text-sm text-gray-400">
+                        <span id="charCount">0</span> / 2000
+                    </div>
+                </div>
+            </div>
+
+            <!-- 附件区域 -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-sm font-medium text-gray-700">附件</label>
+                    <span id="attachmentCount" class="text-xs text-gray-500">0张图片</span>
+                </div>
+                <div class="flex items-start space-x-3">
+                    <div id="attachmentsContainer" class="flex flex-wrap gap-3">
+                        <!-- 附件将通过JavaScript动态生成 -->
+                    </div>
+                    <div class="attachment-item flex items-center justify-center cursor-pointer" onclick="document.getElementById('fileInput').click()">
+                        <div class="text-center">
+                            <i class="fa fa-image text-gray-400 text-xl mb-1"></i>
+                            <span class="text-xs text-gray-500">添加图片</span>
+                        </div>
+                        <input type="file" id="fileInput" accept="image/*" multiple class="hidden" onchange="handleFileSelect(event)">
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-2">支持拖拽图片、粘贴剪贴板图片或点击添加图片</p>
+            </div>
+
+            <!-- 发送按钮 -->
+            <div class="flex justify-between items-center">
+                <div class="text-xs text-gray-500">
+                    <span id="totalSize">总大小: 0KB</span>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="clearForm()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 btn-hover">
+                        <i class="fa fa-times mr-1"></i> 清空
+                    </button>
+                    <button onclick="sendMessage()" class="px-6 py-2 bg-primary text-white rounded-lg btn-hover flex items-center space-x-2">
+                        <i class="fa fa-paper-plane"></i>
+                        <span>发送消息</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 空状态提示 -->
+        <div id="emptyState" class="text-center py-20">
+            <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <i class="fa fa-link text-gray-400 text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-700 mb-2">还没有添加任何 Webhook</h3>
+            <p class="text-gray-500 mb-6">点击右上角的"添加 Webhook"按钮开始使用</p>
+            <button onclick="openAddModal()" class="px-4 py-2 bg-primary text-white rounded-lg btn-hover">
+                <i class="fa fa-plus mr-1"></i> 添加第一个 Webhook
+            </button>
+        </div>
+    </main>
+
+    <!-- 添加 Webhook 模态框 -->
+    <div id="addWebhookModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">添加 Webhook</h3>
+                    <button onclick="closeAddModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form id="webhookForm" class="space-y-4">
+                    <div>
+                        <label for="webhookAlias" class="block text-sm font-medium text-gray-700 mb-1">别名</label>
+                        <input 
+                            type="text" 
+                            id="webhookAlias" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus"
+                            placeholder="例如：通知系统、日志服务"
+                            required
+                        >
+                    </div>
+                    
+                    <div>
+                        <label for="webhookUrl" class="block text-sm font-medium text-gray-700 mb-1">Webhook 地址</label>
+                        <input 
+                            type="url" 
+                            id="webhookUrl" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus"
+                            placeholder="https://example.com/webhook"
+                            required
+                        >
+                    </div>
+                    
+                    <div class="flex space-x-3 pt-2">
+                        <button type="button" onclick="closeAddModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 btn-hover">
+                            取消
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg btn-hover">
+                            保存
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成功提示 -->
+    <div id="successToast" class="fixed bottom-4 right-4 bg-success text-white px-4 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-2 z-50">
+        <i class="fa fa-check-circle"></i>
+        <span id="successMessage">操作成功！</span>
+    </div>
+
+    <!-- 错误提示 -->
+    <div id="errorToast" class="fixed bottom-4 right-4 bg-danger text-white px-4 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-2 z-50">
+        <i class="fa fa-exclamation-circle"></i>
+        <span id="errorMessage">操作失败，请重试</span>
+    </div>
+
+    <script>
+        // 全局变量
+        let webhooks = JSON.parse(localStorage.getItem('webhooks') || '[]');
+        let currentWebhook = null;
+        let attachments = [];
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('WebhookSender 简化版 初始化');
+            
+            // 绑定表单提交事件
+            document.getElementById('webhookForm').addEventListener('submit', saveWebhook);
+            
+            // 绑定文本输入事件
+            document.getElementById('messageInput').addEventListener('input', updateCharCount);
+            document.getElementById('messageInput').addEventListener('paste', handlePaste);
+            
+            // 绑定拖拽事件
+            const messageArea = document.getElementById('messageArea');
+            messageArea.addEventListener('dragover', handleDragOver);
+            messageArea.addEventListener('drop', handleDrop);
+            messageArea.addEventListener('dragleave', handleDragLeave);
+            
+            // 初始化界面
+            renderWebhookTabs();
+            checkEmptyState();
+            updateAttachmentStats();
+            
+            // 如果有保存的webhook，默认选中第一个
+            if (webhooks.length > 0) {
+                selectWebhook(webhooks[0].id);
+            }
+            
+            showToast('WebhookSender 简化版 已加载', 'success');
+        });
+
+        // 渲染Webhook标签
+        function renderWebhookTabs() {
+            const tabsContainer = document.getElementById('webhookTabs');
+            tabsContainer.innerHTML = '';
+
+            webhooks.forEach(webhook => {
+                const tab = document.createElement('div');
+                tab.className = `px-4 py-2 border border-gray-300 rounded-t-lg cursor-pointer text-sm font-medium transition-all duration-200 ${
+                    currentWebhook === webhook.id ? 'tab-active' : 'hover:bg-gray-50'
+                }`;
+                tab.dataset.id = webhook.id;
+                tab.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <span>${webhook.alias}</span>
+                        <button class="text-gray-400 hover:text-danger transition-colors" onclick="deleteWebhook('${webhook.id}', event)">
+                            <i class="fa fa-times text-xs"></i>
+                        </button>
+                    </div>
+                `;
+                
+                tab.addEventListener('click', () => selectWebhook(webhook.id));
+                tabsContainer.appendChild(tab);
+            });
+        }
+
+        // 选择Webhook
+        function selectWebhook(id) {
+            console.log('选择Webhook:', id);
+            currentWebhook = id;
+            document.getElementById('messageArea').classList.remove('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+            renderWebhookTabs();
+        }
+
+        // 打开添加Webhook模态框
+        function openAddModal() {
+            const modal = document.getElementById('addWebhookModal');
+            modal.classList.remove('hidden');
+            
+            // 清空表单
+            document.getElementById('webhookForm').reset();
+        }
+
+        // 关闭添加Webhook模态框
+        function closeAddModal() {
+            const modal = document.getElementById('addWebhookModal');
+            modal.classList.add('hidden');
+        }
+
+        // 保存Webhook
+        function saveWebhook(e) {
+            e.preventDefault();
+            
+            const alias = document.getElementById('webhookAlias').value.trim();
+            const url = document.getElementById('webhookUrl').value.trim();
+            
+            if (!alias || !url) {
+                showToast('请填写完整信息', 'error');
+                return;
+            }
+            
+            const newWebhook = {
+                id: Date.now().toString(),
+                alias,
+                url
+            };
+            
+            webhooks.push(newWebhook);
+            localStorage.setItem('webhooks', JSON.stringify(webhooks));
+            
+            closeAddModal();
+            selectWebhook(newWebhook.id);
+            renderWebhookTabs();
+            checkEmptyState();
+            showToast('Webhook 添加成功', 'success');
+        }
+
+        // 删除Webhook
+        function deleteWebhook(id, event) {
+            event.stopPropagation();
+            
+            if (confirm('确定要删除这个Webhook吗？')) {
+                webhooks = webhooks.filter(webhook => webhook.id !== id);
+                localStorage.setItem('webhooks', JSON.stringify(webhooks));
+                
+                if (currentWebhook === id) {
+                    currentWebhook = null;
+                    document.getElementById('messageArea').classList.add('hidden');
+                }
+                
+                renderWebhookTabs();
+                checkEmptyState();
+                showToast('Webhook 删除成功', 'success');
+            }
+        }
+
+        // 检查空状态
+        function checkEmptyState() {
+            if (webhooks.length === 0) {
+                document.getElementById('messageArea').classList.add('hidden');
+                document.getElementById('emptyState').classList.remove('hidden');
+            }
+        }
+
+        // 更新字符计数
+        function updateCharCount() {
+            const input = document.getElementById('messageInput');
+            const charCount = document.getElementById('charCount');
+            const maxLength = 2000;
+            
+            const count = input.value.length;
+            charCount.textContent = count;
+            
+            if (count > maxLength) {
+                charCount.classList.add('text-danger');
+                input.value = input.value.substring(0, maxLength);
+                charCount.textContent = maxLength;
+            } else {
+                charCount.classList.remove('text-danger');
+            }
+        }
+
+        // 处理粘贴
+        function handlePaste(e) {
+            try {
+                const clipboardData = e.clipboardData || e.originalEvent?.clipboardData;
+                if (!clipboardData) return;
+                
+                const items = clipboardData.items;
+                if (!items || items.length === 0) return;
+                
+                for (const item of items) {
+                    if (item.kind === 'file' && item.type.startsWith('image/')) {
+                        const file = item.getAsFile();
+                        if (file) {
+                            addAttachment(file);
+                            showToast('图片粘贴成功', 'success');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('粘贴处理失败:', error);
+                showToast('粘贴图片失败: ' + error.message, 'error');
+            }
+        }
+
+        // 处理文件选择
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            if (files.length > 0) {
+                for (const file of files) {
+                    if (file.type.startsWith('image/')) {
+                        addAttachment(file);
+                    }
+                }
+                showToast(`成功添加 ${files.length} 张图片`, 'success');
+                event.target.value = ''; // 重置input
+            }
+        }
+
+        // 处理拖拽悬停
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const messageArea = document.getElementById('messageArea');
+            messageArea.classList.add('border-2', 'border-primary/50', 'bg-primary/5');
+        }
+
+        // 处理拖拽离开
+        function handleDragLeave() {
+            const messageArea = document.getElementById('messageArea');
+            messageArea.classList.remove('border-2', 'border-primary/50', 'bg-primary/5');
+        }
+
+        // 处理拖拽放下
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            handleDragLeave();
+            
+            const files = e.dataTransfer.files;
+            let addedCount = 0;
+            
+            for (const file of files) {
+                if (file.type.startsWith('image/')) {
+                    addedCount++;
+                    addAttachment(file);
+                }
+            }
+            
+            if (addedCount > 0) {
+                showToast(`成功添加 ${addedCount} 张图片`, 'success');
+            }
+        }
+
+        // 添加附件
+        function addAttachment(file) {
+            try {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        const result = e.target.result;
+                        if (!result || !result.startsWith('data:')) {
+                            throw new Error('无效的图片数据');
+                        }
+                        
+                        const attachment = {
+                            id: Date.now().toString(),
+                            url: result,
+                            name: file.name,
+                            size: file.size,
+                            file: file
+                        };
+                        
+                        attachments.push(attachment);
+                        renderAttachments();
+                        updateAttachmentStats();
+                        
+                        console.log('附件添加成功:', attachment.name);
+                    } catch (error) {
+                        console.error('附件处理失败:', error);
+                        showToast('图片添加失败: ' + error.message, 'error');
+                    }
+                };
+                
+                reader.onerror = function(error) {
+                    console.error('文件读取失败:', error);
+                    showToast('图片读取失败', 'error');
+                };
+                
+                reader.readAsDataURL(file);
+            } catch (error) {
+                console.error('添加附件失败:', error);
+                showToast('图片添加失败: ' + error.message, 'error');
+            }
+        }
+
+        // 渲染附件
+        function renderAttachments() {
+            const container = document.getElementById('attachmentsContainer');
+            container.innerHTML = '';
+            
+            attachments.forEach(attachment => {
+                const item = document.createElement('div');
+                item.className = 'attachment-item relative';
+                
+                // 创建图片元素
+                const img = document.createElement('img');
+                img.src = attachment.url;
+                img.alt = attachment.name;
+                img.className = 'attachment-preview';
+                
+                // 图片加载失败处理
+                img.onerror = function() {
+                    this.style.display = 'none';
+                    item.innerHTML += `
+                        <div class="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 text-center p-2 text-gray-500">
+                            <i class="fa fa-image text-2xl mb-1"></i>
+                            <div class="text-xs">${attachment.name}</div>
+                            <div class="text-xs">${(attachment.size / 1024).toFixed(1)}KB</div>
+                        </div>
+                    `;
+                };
+                
+                item.appendChild(img);
+                
+                // 删除按钮
+                const removeBtn = document.createElement('div');
+                removeBtn.className = 'attachment-remove';
+                removeBtn.onclick = () => removeAttachment(attachment.id);
+                removeBtn.innerHTML = '<i class="fa fa-times text-xs"></i>';
+                
+                item.appendChild(removeBtn);
+                container.appendChild(item);
+            });
+        }
+
+        // 移除附件
+        function removeAttachment(id) {
+            attachments = attachments.filter(att => att.id !== id);
+            renderAttachments();
+            updateAttachmentStats();
+            showToast('图片已移除', 'success');
+        }
+
+        // 更新附件统计信息
+        function updateAttachmentStats() {
+            const attachmentCount = document.getElementById('attachmentCount');
+            const totalSize = document.getElementById('totalSize');
+            
+            const count = attachments.length;
+            const size = attachments.reduce((sum, att) => sum + att.size, 0);
+            
+            attachmentCount.textContent = `${count}张图片`;
+            totalSize.textContent = `总大小: ${(size / 1024).toFixed(1)}KB`;
+        }
+
+        // 清空表单
+        function clearForm() {
+            document.getElementById('messageInput').value = '';
+            attachments = [];
+            updateCharCount();
+            renderAttachments();
+            updateAttachmentStats();
+            showToast('表单已清空', 'success');
+        }
+
+        // 发送消息
+        async function sendMessage() {
+            const message = document.getElementById('messageInput').value.trim();
+            if (!message && attachments.length === 0) {
+                showToast('请输入消息内容或添加附件', 'error');
+                return;
+            }
+            
+            if (!currentWebhook) {
+                showToast('请先选择一个Webhook', 'error');
+                return;
+            }
+            
+            const webhook = webhooks.find(w => w.id === currentWebhook);
+            if (!webhook) {
+                showToast('未找到选中的Webhook', 'error');
+                return;
+            }
+            
+            // 显示发送状态
+            const sendBtn = event.target.closest('button');
+            const originalText = sendBtn.innerHTML;
+            sendBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> <span>发送中...</span>';
+            sendBtn.disabled = true;
+            
+            try {
+                let response;
+                
+                if (attachments.length > 0) {
+                    // 使用FormData格式发送
+                    const formData = new FormData();
+                    formData.append('content', message);
+                    
+                    // 添加附件
+                    attachments.forEach((att, index) => {
+                        formData.append(`attachment_${index}`, att.file, att.name);
+                    });
+                    
+                    // 发送请求
+                    response = await fetch(webhook.url, {
+                        method: 'POST',
+                        body: formData
+                    });
+                } else {
+                    // 纯文本消息，使用JSON格式
+                    const data = {
+                        content: message
+                    };
+                    
+                    // 发送请求
+                    response = await fetch(webhook.url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                }
+                
+                if (!response.ok) {
+                    const errorText = await response.text().catch(() => '');
+                    throw new Error(`HTTP error! status: ${response.status} ${errorText}`);
+                }
+                
+                showToast('消息发送成功！', 'success');
+                clearForm();
+            } catch (error) {
+                console.error('发送失败:', error);
+                showToast('发送失败: ' + error.message, 'error');
+            } finally {
+                // 恢复按钮状态
+                sendBtn.innerHTML = originalText;
+                sendBtn.disabled = false;
+            }
+        }
+
+        // 显示提示消息
+        function showToast(message, type = 'success') {
+            const toast = type === 'success' ? 
+                document.getElementById('successToast') : 
+                document.getElementById('errorToast');
+                
+            const messageElement = type === 'success' ? 
+                document.getElementById('successMessage') : 
+                document.getElementById('errorMessage');
+            
+            messageElement.textContent = message;
+            
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
