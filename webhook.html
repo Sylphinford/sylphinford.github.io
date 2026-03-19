@@ -73,7 +73,6 @@
             </div>
         </div>
     </header>
-
     <!-- 主要内容区域 -->
     <main class="flex-1 container mx-auto px-4 py-6">
         <!-- Webhook 标签栏 -->
@@ -84,41 +83,54 @@
                 </div>
             </div>
         </div>
-
         <!-- 消息发送区域 -->
         <div id="messageArea" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hidden">
-            <!-- 发送选项 -->
-            <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-                <h4 class="text-sm font-medium text-gray-700 mb-3">发送选项</h4>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">发送格式</label>
-                        <select id="sendFormat" class="w-full px-3 py-2 border border-gray-300 rounded-lg input-focus text-sm">
-                            <option value="auto">自动检测（推荐）</option>
-                            <option value="json">JSON格式</option>
-                            <option value="form">表单格式 (multipart/form-data)</option>
-                            <option value="urlencoded">URL编码 (x-www-form-urlencoded)</option>
-                        </select>
+            <div class="mb-6 flex gap-4">
+                <!-- 发送选项：纵向排列在左侧，缩小尺寸 -->
+                <div class="p-3 bg-gray-50 rounded-lg w-44 flex-shrink-0">
+                    <h4 class="text-xs font-medium text-gray-700 mb-2">发送选项</h4>
+                    <div class="grid grid-cols-1 gap-2.5">
+                        <div>
+                            <label class="block text-[10px] font-medium text-gray-600 mb-0.5">发送格式</label>
+                            <select id="sendFormat" class="w-full px-2 py-1 border border-gray-300 rounded-lg input-focus text-xs">
+                                <option value="auto">自动检测</option>
+                                <option value="json">JSON格式</option>
+                                <option value="form">表单格式</option>
+                                <option value="urlencoded">URL编码</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-medium text-gray-600 mb-0.5">图片处理</label>
+                            <select id="imageOption" class="w-full px-2 py-1 border border-gray-300 rounded-lg input-focus text-xs">
+                                <option value="compress">自动压缩</option>
+                                <option value="original">保持原图</option>
+                                <option value="link">仅发送链接</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-medium text-gray-600 mb-0.5">超时设置</label>
+                            <select id="timeoutOption" class="w-full px-2 py-1 border border-gray-300 rounded-lg input-focus text-xs">
+                                <option value="10000">10秒</option>
+                                <option value="5000">5秒</option>
+                                <option value="30000">30秒</option>
+                            </select>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">图片处理</label>
-                        <select id="imageOption" class="w-full px-3 py-2 border border-gray-300 rounded-lg input-focus text-sm">
-                            <option value="compress">自动压缩（推荐）</option>
-                            <option value="original">保持原图</option>
-                            <option value="link">仅发送链接</option>
-                        </select>
+                </div>
+                <!-- 预设消息区域 -->
+                <div class="flex-1 p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-xs font-medium text-gray-700">预设消息</h4>
+                        <button id="addPresetBtn" class="text-xs px-2 py-1 bg-primary text-white rounded btn-hover flex items-center gap-1">
+                            <i class="fa fa-plus text-xs"></i> 添加预设
+                        </button>
                     </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">超时设置</label>
-                        <select id="timeoutOption" class="w-full px-3 py-2 border border-gray-300 rounded-lg input-focus text-sm">
-                            <option value="10000">10秒（推荐）</option>
-                            <option value="5000">5秒</option>
-                            <option value="30000">30秒</option>
-                        </select>
+                    <div id="presetButtonsContainer" class="flex flex-wrap gap-2">
+                        <!-- 预设消息按钮将动态生成 -->
+                        <span class="text-xs text-gray-400">暂无预设消息，点击添加按钮创建</span>
                     </div>
                 </div>
             </div>
-
             <div class="mb-4">
                 <label for="messageInput" class="block text-sm font-medium text-gray-700 mb-2">消息内容</label>
                 <div class="relative">
@@ -133,7 +145,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- 附件区域 -->
             <div class="mb-6">
                 <div class="flex items-center justify-between mb-2">
@@ -154,7 +165,6 @@
                 </div>
                 <p class="text-xs text-gray-500 mt-2">支持拖拽图片、粘贴剪贴板图片或点击添加图片</p>
             </div>
-
             <!-- 发送按钮 -->
             <div class="flex justify-between items-center">
                 <div class="text-xs text-gray-500">
@@ -174,7 +184,6 @@
                 </div>
             </div>
         </div>
-
         <!-- 空状态提示 -->
         <div id="emptyState" class="text-center py-20">
             <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
@@ -187,7 +196,6 @@
             </button>
         </div>
     </main>
-
     <!-- 调试模态框 -->
     <div id="debugModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
@@ -220,7 +228,6 @@
             </div>
         </div>
     </div>
-
     <!-- 添加 Webhook 模态框 -->
     <div id="addWebhookModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0" id="modalContent">
@@ -267,32 +274,75 @@
             </div>
         </div>
     </div>
-
+    <!-- 添加预设消息模态框 -->
+    <div id="addPresetModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0" id="presetModalContent">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">添加预设消息</h3>
+                    <button id="closePresetModalBtn" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <i class="fa fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form id="presetForm" class="space-y-4">
+                    <div>
+                        <label for="presetAlias" class="block text-sm font-medium text-gray-700 mb-1">别名</label>
+                        <input 
+                            type="text" 
+                            id="presetAlias" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus"
+                            placeholder="例如：上线通知、报错提醒"
+                            required
+                        >
+                    </div>
+                    
+                    <div>
+                        <label for="presetMessage" class="block text-sm font-medium text-gray-700 mb-1">消息内容</label>
+                        <textarea 
+                            id="presetMessage" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus min-h-[100px]"
+                            placeholder="请输入预设的消息内容..."
+                            required
+                        ></textarea>
+                    </div>
+                    
+                    <div class="flex space-x-3 pt-2">
+                        <button type="button" id="cancelPresetModalBtn" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 btn-hover">
+                            取消
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg btn-hover">
+                            保存
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <!-- 成功提示 -->
     <div id="successToast" class="fixed bottom-4 right-4 bg-success text-white px-4 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-2 z-50">
         <i class="fa fa-check-circle"></i>
         <span id="successMessage">消息发送成功！</span>
     </div>
-
     <!-- 错误提示 -->
     <div id="errorToast" class="fixed bottom-4 right-4 bg-danger text-white px-4 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-2 z-50">
         <i class="fa fa-exclamation-circle"></i>
         <span id="errorMessage">发送失败，请重试</span>
     </div>
-
     <script>
         class WebhookSender {
             constructor() {
                 this.webhooks = JSON.parse(localStorage.getItem('webhooks') || '[]');
+                this.presets = JSON.parse(localStorage.getItem('presetMessages') || '[]');
                 this.currentWebhook = null;
                 this.attachments = [];
                 
                 this.init();
             }
-
             init() {
                 this.bindEvents();
                 this.renderWebhookTabs();
+                this.renderPresetButtons();
                 this.checkEmptyState();
                 this.updateAttachmentStats();
                 this.updateSendOptions();
@@ -302,7 +352,6 @@
                     this.selectWebhook(this.webhooks[0].id);
                 }
             }
-
             bindEvents() {
                 // 模态框相关
                 document.getElementById('addWebhookBtn').addEventListener('click', () => this.openModal());
@@ -310,12 +359,10 @@
                 document.getElementById('closeModalBtn').addEventListener('click', () => this.closeModal());
                 document.getElementById('cancelModalBtn').addEventListener('click', () => this.closeModal());
                 document.getElementById('webhookForm').addEventListener('submit', (e) => this.saveWebhook(e));
-
                 // 调试模态框相关
                 document.getElementById('debugBtn').addEventListener('click', () => this.openDebugModal());
                 document.getElementById('closeDebugModalBtn').addEventListener('click', () => this.closeDebugModal());
                 document.getElementById('copyDebugBtn').addEventListener('click', () => this.copyDebugInfo());
-
                 // 表单相关
                 document.getElementById('messageInput').addEventListener('input', () => this.updateCharCount());
                 document.getElementById('messageInput').addEventListener('paste', (e) => this.handlePaste(e));
@@ -334,11 +381,16 @@
                 messageArea.addEventListener('drop', (e) => this.handleDrop(e));
                 messageArea.addEventListener('dragleave', () => this.handleDragLeave());
                 
+                // 预设消息相关
+                document.getElementById('addPresetBtn').addEventListener('click', () => this.openPresetModal());
+                document.getElementById('closePresetModalBtn').addEventListener('click', () => this.closePresetModal());
+                document.getElementById('cancelPresetModalBtn').addEventListener('click', () => this.closePresetModal());
+                document.getElementById('presetForm').addEventListener('submit', (e) => this.savePreset(e));
+                
                 // 发送选项变化
                 document.getElementById('sendFormat').addEventListener('change', () => this.updateSendOptions());
                 document.getElementById('imageOption').addEventListener('change', () => this.updateSendOptions());
             }
-
             // 更新附件统计信息
             updateAttachmentStats() {
                 const attachmentCount = document.getElementById('attachmentCount');
@@ -350,7 +402,6 @@
                 attachmentCount.textContent = `${count}张图片`;
                 totalSize.textContent = `总大小: ${(size / 1024).toFixed(1)}KB`;
             }
-
             // 更新发送选项
             updateSendOptions() {
                 const format = document.getElementById('sendFormat').value;
@@ -367,7 +418,6 @@
                     document.getElementById('imageOption').disabled = false;
                 }
             }
-
             // 打开调试模态框
             openDebugModal() {
                 const modal = document.getElementById('debugModal');
@@ -378,13 +428,11 @@
                 document.getElementById('responseInfo').textContent = '';
                 document.getElementById('errorInfo').textContent = '';
             }
-
             // 关闭调试模态框
             closeDebugModal() {
                 const modal = document.getElementById('debugModal');
                 modal.classList.add('hidden');
             }
-
             // 复制调试信息
             copyDebugInfo() {
                 const requestInfo = document.getElementById('requestInfo').textContent;
@@ -392,16 +440,12 @@
                 const errorInfo = document.getElementById('errorInfo').textContent;
                 
                 const debugText = `=== Webhook 调试信息 ===
-
 请求信息:
 ${requestInfo}
-
 响应信息:
 ${responseInfo}
-
 错误详情:
 ${errorInfo}
-
 === 调试信息结束 ===`;
                 
                 navigator.clipboard.writeText(debugText).then(() => {
@@ -410,7 +454,6 @@ ${errorInfo}
                     this.showToast('复制失败，请手动复制', 'error');
                 });
             }
-
             // 显示调试信息
             showDebugInfo(requestInfo, responseInfo = '', errorInfo = '') {
                 document.getElementById('requestInfo').textContent = requestInfo;
@@ -420,12 +463,10 @@ ${errorInfo}
                 // 自动打开调试模态框
                 this.openDebugModal();
             }
-
             // 渲染Webhook标签
             renderWebhookTabs() {
                 const tabsContainer = document.getElementById('webhookTabs');
                 tabsContainer.innerHTML = '';
-
                 this.webhooks.forEach(webhook => {
                     const tab = document.createElement('div');
                     tab.className = `px-4 py-2 border border-gray-300 rounded-t-lg cursor-pointer text-sm font-medium transition-all duration-200 ${
@@ -445,7 +486,6 @@ ${errorInfo}
                     tabsContainer.appendChild(tab);
                 });
             }
-
             // 选择Webhook
             selectWebhook(id) {
                 this.currentWebhook = id;
@@ -453,7 +493,6 @@ ${errorInfo}
                 document.getElementById('emptyState').classList.add('hidden');
                 this.renderWebhookTabs();
             }
-
             // 打开添加Webhook模态框
             openModal() {
                 const modal = document.getElementById('addWebhookModal');
@@ -468,7 +507,6 @@ ${errorInfo}
                 // 清空表单
                 document.getElementById('webhookForm').reset();
             }
-
             // 关闭添加Webhook模态框
             closeModal() {
                 const modal = document.getElementById('addWebhookModal');
@@ -481,7 +519,6 @@ ${errorInfo}
                     modal.classList.add('hidden');
                 }, 300);
             }
-
             // 保存Webhook
             saveWebhook(e) {
                 e.preventDefault();
@@ -505,7 +542,6 @@ ${errorInfo}
                 this.renderWebhookTabs();
                 this.checkEmptyState();
             }
-
             // 删除Webhook
             deleteWebhook(id, event) {
                 event.stopPropagation();
@@ -523,7 +559,6 @@ ${errorInfo}
                     this.checkEmptyState();
                 }
             }
-
             // 检查空状态
             checkEmptyState() {
                 if (this.webhooks.length === 0) {
@@ -531,7 +566,6 @@ ${errorInfo}
                     document.getElementById('emptyState').classList.remove('hidden');
                 }
             }
-
             // 更新字符计数
             updateCharCount() {
                 const input = document.getElementById('messageInput');
@@ -549,7 +583,6 @@ ${errorInfo}
                     charCount.classList.remove('text-danger');
                 }
             }
-
             // 处理粘贴
             handlePaste(e) {
                 try {
@@ -585,12 +618,11 @@ ${errorInfo}
                     this.showToast('粘贴图片失败，请尝试手动添加', 'error');
                 }
             }
-
             // 图片压缩功能
             compressImage(file, quality = 0.8, maxWidth = 1920, maxHeight = 1080) {
                 return new Promise((resolve, reject) => {
                     const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
+                    const ctx = canvas.getContext('2');
                     const img = new Image();
                     
                     img.onload = function() {
@@ -640,7 +672,6 @@ ${errorInfo}
                     img.src = URL.createObjectURL(file);
                 });
             }
-
             // 处理文件选择
             handleFileSelect(e) {
                 const files = e.target.files;
@@ -665,7 +696,6 @@ ${errorInfo}
                     e.target.value = ''; // 重置input，以便可以选择相同的文件
                 }
             }
-
             // 处理拖拽悬停
             handleDragOver(e) {
                 e.preventDefault();
@@ -692,7 +722,6 @@ ${errorInfo}
                     document.body.appendChild(dragHint);
                 }
             }
-
             // 处理拖拽离开
             handleDragLeave() {
                 const messageArea = document.getElementById('messageArea');
@@ -704,7 +733,6 @@ ${errorInfo}
                     dragHint.remove();
                 }
             }
-
             // 处理拖拽放下
             handleDrop(e) {
                 e.preventDefault();
@@ -737,7 +765,6 @@ ${errorInfo}
                     this.showToast(`成功添加 ${addedCount} 张图片`, 'success');
                 }
             }
-
             // 添加附件
             addAttachment(file) {
                 const reader = new FileReader();
@@ -756,7 +783,6 @@ ${errorInfo}
                 };
                 reader.readAsDataURL(file);
             }
-
             // 渲染附件
             renderAttachments() {
                 const container = document.getElementById('attachmentsContainer');
@@ -785,13 +811,11 @@ ${errorInfo}
                     container.appendChild(item);
                 });
             }
-
             // 移除附件
             removeAttachment(id) {
                 this.attachments = this.attachments.filter(att => att.id !== id);
                 this.renderAttachments();
             }
-
             // 发送消息
             async sendMessage() {
                 const message = document.getElementById('messageInput').value.trim();
@@ -870,7 +894,6 @@ ${errorInfo}
 请求头:
   Content-Type: application/json
   Accept: application/json
-
 请求体:
 ${JSON.stringify(data, null, 2)}`;
                         
@@ -898,7 +921,6 @@ ${JSON.stringify(data, null, 2)}`;
 请求头:
   Content-Type: application/x-www-form-urlencoded
   Accept: application/json
-
 请求体:
 ${formData.toString()}`;
                         
@@ -926,7 +948,6 @@ ${formData.toString()}`;
 请求头:
   Content-Type: multipart/form-data
   Accept: application/json
-
 请求体:
   content: ${message}
   附件: ${this.attachments.map(att => att.name).join(', ')}`;
@@ -943,7 +964,6 @@ ${formData.toString()}`;
                     responseInfo = `状态码: ${response.status} ${response.statusText}
 响应头:
 ${Array.from(response.headers.entries()).map(([key, value]) => `  ${key}: ${value}`).join('\n')}
-
 响应体:`;
                     
                     try {
@@ -955,7 +975,6 @@ ${responseBody}`;
                         try {
                             const jsonBody = JSON.parse(responseBody);
                             responseInfo += `
-
 格式化JSON:
 ${JSON.stringify(jsonBody, null, 2)}`;
                         } catch {}
@@ -992,7 +1011,6 @@ ${JSON.stringify(jsonBody, null, 2)}`;
                     sendBtn.disabled = false;
                 }
             }
-
             // 清空表单
             clearForm() {
                 document.getElementById('messageInput').value = '';
@@ -1000,7 +1018,77 @@ ${JSON.stringify(jsonBody, null, 2)}`;
                 this.updateCharCount();
                 this.renderAttachments();
             }
-
+            // 打开添加预设消息模态框
+            openPresetModal() {
+                const modal = document.getElementById('addPresetModal');
+                const modalContent = document.getElementById('presetModalContent');
+                
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modalContent.classList.remove('scale-95', 'opacity-0');
+                    modalContent.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                
+                // 清空表单
+                document.getElementById('presetForm').reset();
+            }
+            // 关闭添加预设消息模态框
+            closePresetModal() {
+                const modal = document.getElementById('addPresetModal');
+                const modalContent = document.getElementById('presetModalContent');
+                
+                modalContent.classList.remove('scale-100', 'opacity-100');
+                modalContent.classList.add('scale-95', 'opacity-0');
+                
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+            // 保存预设消息
+            savePreset(e) {
+                e.preventDefault();
+                
+                const alias = document.getElementById('presetAlias').value.trim();
+                const message = document.getElementById('presetMessage').value.trim();
+                
+                if (!alias || !message) return;
+                
+                const newPreset = {
+                    id: Date.now().toString(),
+                    alias,
+                    message
+                };
+                
+                this.presets.push(newPreset);
+                localStorage.setItem('presetMessages', JSON.stringify(this.presets));
+                
+                this.closePresetModal();
+                this.renderPresetButtons();
+                this.showToast('预设消息添加成功', 'success');
+            }
+            // 渲染预设消息按钮
+            renderPresetButtons() {
+                const container = document.getElementById('presetButtonsContainer');
+                container.innerHTML = '';
+                
+                if (this.presets.length === 0) {
+                    container.innerHTML = '<span class="text-xs text-gray-400">暂无预设消息，点击添加按钮创建</span>';
+                    return;
+                }
+                
+                this.presets.forEach(preset => {
+                    const btn = document.createElement('button');
+                    btn.className = 'text-xs px-2.5 py-1 bg-white border border-gray-200 rounded hover:border-primary hover:text-primary transition-colors btn-hover';
+                    btn.textContent = preset.alias;
+                    btn.onclick = () => {
+                        // 填充预设消息并直接发送
+                        document.getElementById('messageInput').value = preset.message;
+                        this.updateCharCount();
+                        this.sendMessage();
+                    };
+                    container.appendChild(btn);
+                });
+            }
             // 显示提示消息
             showToast(message, type = 'success') {
                 const toast = type === 'success' ? 
@@ -1022,7 +1110,6 @@ ${JSON.stringify(jsonBody, null, 2)}`;
                 }, 3000);
             }
         }
-
         // 初始化应用
         let webhookSender;
         document.addEventListener('DOMContentLoaded', () => {
