@@ -1078,13 +1078,27 @@ ${JSON.stringify(jsonBody, null, 2)}`;
                 
                 this.presets.forEach(preset => {
                     const btn = document.createElement('button');
-                    btn.className = 'text-xs px-2.5 py-1 bg-white border border-gray-200 rounded hover:border-primary hover:text-primary transition-colors btn-hover';
-                    btn.textContent = preset.alias;
+                    btn.className = 'text-xs px-2 py-1 bg-white border border-gray-200 rounded hover:border-primary hover:text-primary transition-colors btn-hover flex items-center';
+                    btn.innerHTML = `
+                        <span>${preset.alias}</span>
+                        <span class="delete-preset ml-1 w-3.5 h-3.5 rounded-full bg-danger/70 text-white flex items-center justify-center hover:bg-danger transition-colors text-[10px]">×</span>
+                    `;
                     btn.onclick = () => {
                         // 填充预设消息并直接发送
                         document.getElementById('messageInput').value = preset.message;
                         this.updateCharCount();
                         this.sendMessage();
+                    };
+                    // 绑定删除按钮事件
+                    const deleteBtn = btn.querySelector('.delete-preset');
+                    deleteBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        if (confirm(`确定要删除预设消息"${preset.alias}"吗？`)) {
+                            this.presets = this.presets.filter(p => p.id !== preset.id);
+                            localStorage.setItem('presetMessages', JSON.stringify(this.presets));
+                            this.renderPresetButtons();
+                            this.showToast('预设消息已删除', 'success');
+                        }
                     };
                     container.appendChild(btn);
                 });
