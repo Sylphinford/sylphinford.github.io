@@ -422,11 +422,6 @@
             openDebugModal() {
                 const modal = document.getElementById('debugModal');
                 modal.classList.remove('hidden');
-                
-                // 清空调试信息
-                document.getElementById('requestInfo').textContent = '点击"发送消息"后将显示请求信息';
-                document.getElementById('responseInfo').textContent = '';
-                document.getElementById('errorInfo').textContent = '';
             }
             // 关闭调试模态框
             closeDebugModal() {
@@ -459,9 +454,6 @@ ${errorInfo}
                 document.getElementById('requestInfo').textContent = requestInfo;
                 document.getElementById('responseInfo').textContent = responseInfo;
                 document.getElementById('errorInfo').textContent = errorInfo;
-                
-                // 自动打开调试模态框
-                this.openDebugModal();
             }
             // 渲染Webhook标签
             renderWebhookTabs() {
