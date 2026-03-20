@@ -1,0 +1,202 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鼠标功能测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-100">
+    <div class="min-h-screen flex flex-col items-center justify-center p-4">
+        <!-- 重置按钮 -->
+        <button id="resetBtn" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors mb-6 text-lg font-medium shadow-sm">
+            重置
+        </button>
+
+        <div class="flex gap-6 items-stretch">
+            <!-- 左侧：点击测试卡片 -->
+            <div class="bg-white shadow-md rounded-lg p-6 w-56">
+                <h2 class="text-xl font-semibold text-center mb-4 text-gray-800">点击测试</h2>
+                <div class="space-y-2 text-lg text-gray-600">
+                    <div class="flex justify-between">
+                        <span>左键：</span>
+                        <span id="leftCount" class="font-medium">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>右键：</span>
+                        <span id="rightCount" class="font-medium">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>中间：</span>
+                        <span id="middleCount" class="font-medium">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>滚轮向左：</span>
+                        <span id="wheelLeftCount" class="font-medium">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>滚轮向右：</span>
+                        <span id="wheelRightCount" class="font-medium">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>前进：</span>
+                        <span id="forwardCount" class="font-medium">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>后退：</span>
+                        <span id="backCount" class="font-medium">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中间：测试区域 -->
+            <div id="testArea" class="border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 rounded-2xl w-96 flex items-center justify-center text-2xl font-medium text-gray-700 transition-colors cursor-crosshair">
+                鼠标放在这里
+            </div>
+
+            <!-- 右侧：滚轮测试卡片 -->
+            <div class="bg-white shadow-md rounded-lg p-6 w-56">
+                <h2 class="text-xl font-semibold text-center mb-4 text-gray-800">滚轮测试</h2>
+                <div class="space-y-2 text-lg text-gray-600">
+                    <div class="flex justify-between">
+                        <span>向上</span>
+                        <span>
+                            <span id="wheelUpCount" class="font-medium">0</span>次 
+                            <span id="wheelUpPercent" class="text-blue-500">0%</span>
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>向下</span>
+                        <span>
+                            <span id="wheelDownCount" class="font-medium">0</span>次 
+                            <span id="wheelDownPercent" class="text-blue-500">0%</span>
+                        </span>
+                    </div>
+                    <div class="flex justify-between font-medium text-gray-800 mt-4 pt-2 border-t border-gray-200">
+                        <span>总共</span>
+                        <span id="wheelTotalCount">0</span>次
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const leftCount = document.getElementById('leftCount');
+        const rightCount = document.getElementById('rightCount');
+        const middleCount = document.getElementById('middleCount');
+        const wheelLeftCount = document.getElementById('wheelLeftCount');
+        const wheelRightCount = document.getElementById('wheelRightCount');
+        const forwardCount = document.getElementById('forwardCount');
+        const backCount = document.getElementById('backCount');
+
+        const wheelUpCount = document.getElementById('wheelUpCount');
+        const wheelUpPercent = document.getElementById('wheelUpPercent');
+        const wheelDownCount = document.getElementById('wheelDownCount');
+        const wheelDownPercent = document.getElementById('wheelDownPercent');
+        const wheelTotalCount = document.getElementById('wheelTotalCount');
+
+        const testArea = document.getElementById('testArea');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // 初始化计数器
+        let leftClick = 0, rightClick = 0, middleClick = 0;
+        let wheelLeft = 0, wheelRight = 0;
+        let forwardClick = 0, backClick = 0;
+        let wheelUp = 0, wheelDown = 0;
+
+        // 更新显示
+        function updateDisplay() {
+            // 更新点击测试显示
+            leftCount.textContent = leftClick;
+            rightCount.textContent = rightClick;
+            middleCount.textContent = middleClick;
+            wheelLeftCount.textContent = wheelLeft;
+            wheelRightCount.textContent = wheelRight;
+            forwardCount.textContent = forwardClick;
+            backCount.textContent = backClick;
+
+            // 更新滚轮测试显示
+            const totalWheel = wheelUp + wheelDown;
+            wheelUpCount.textContent = wheelUp;
+            wheelDownCount.textContent = wheelDown;
+            wheelTotalCount.textContent = totalWheel;
+
+            if (totalWheel > 0) {
+                const upPercent = Math.round((wheelUp / totalWheel) * 100);
+                const downPercent = 100 - upPercent;
+                wheelUpPercent.textContent = upPercent + '%';
+                wheelDownPercent.textContent = downPercent + '%';
+            } else {
+                wheelUpPercent.textContent = '0%';
+                wheelDownPercent.textContent = '0%';
+            }
+        }
+
+        // 鼠标按键事件
+        testArea.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            switch(e.button) {
+                case 0: // 左键
+                    leftClick++;
+                    break;
+                case 1: // 中键
+                    middleClick++;
+                    break;
+                case 2: // 右键
+                    rightClick++;
+                    break;
+                case 3: // 后退键
+                    backClick++;
+                    break;
+                case 4: // 前进键
+                    forwardClick++;
+                    break;
+            }
+            updateDisplay();
+        });
+
+        // 阻止鼠标按键释放的默认行为，拦截浏览器侧键前进/后退导航
+        testArea.addEventListener('mouseup', (e) => {
+            e.preventDefault();
+        });
+
+        // 滚轮事件
+        testArea.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            // 处理上下滚动
+            if (e.deltaY > 0) {
+                wheelDown++;
+            } else if (e.deltaY < 0) {
+                wheelUp++;
+            }
+            // 处理左右滚动
+            if (e.deltaX > 0) {
+                wheelRight++;
+            } else if (e.deltaX < 0) {
+                wheelLeft++;
+            }
+            updateDisplay();
+        });
+
+        // 阻止右键菜单
+        testArea.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        // 重置按钮事件
+        resetBtn.addEventListener('click', () => {
+            leftClick = rightClick = middleClick = 0;
+            wheelLeft = wheelRight = 0;
+            forwardClick = backClick = 0;
+            wheelUp = wheelDown = 0;
+            updateDisplay();
+        });
+
+        // 初始化显示
+        updateDisplay();
+    </script>
+</body>
+</html>
