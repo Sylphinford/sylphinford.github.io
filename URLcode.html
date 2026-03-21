@@ -1,0 +1,128 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL编码/解码工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .textarea-focus {
+                @apply focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none;
+            }
+            .btn-hover {
+                @apply hover:shadow-md hover:-translate-y-0.5 transition-all duration-200;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-5xl bg-white rounded-2xl shadow-xl p-8">
+        <!-- 标题区域 -->
+        <div class="text-center mb-8">
+            <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-slate-800 mb-2">URL编码/解码</h1>
+            <p class="text-slate-500">快速处理URL特殊字符转义，支持文本的编码与解码操作</p>
+        </div>
+
+        <!-- 主体内容 -->
+        <div class="flex flex-col md:flex-row items-stretch gap-6">
+            <!-- 左侧输入框 -->
+            <div class="flex-1 flex flex-col gap-2">
+                <label class="text-sm font-medium text-slate-700">输入内容</label>
+                <textarea 
+                    id="inputText" 
+                    class="flex-1 w-full p-4 border border-slate-200 rounded-xl textarea-focus resize-vertical min-h-[280px] text-slate-700"
+                    placeholder="在此输入需要编码的原始文本..."
+                ></textarea>
+            </div>
+
+            <!-- 中间操作区 -->
+            <div class="flex flex-col items-center justify-center gap-4">
+                <div class="flex flex-row md:flex-col items-center gap-4">
+                    <button 
+                        id="encodeBtn"
+                        class="px-6 py-3 bg-primary text-white font-medium rounded-lg btn-hover shadow-sm"
+                    >
+                        Encode &gt;&gt;
+                    </button>
+                    <button 
+                        id="decodeBtn"
+                        class="px-6 py-3 bg-slate-600 text-white font-medium rounded-lg btn-hover shadow-sm"
+                    >
+                        &lt;&lt; Decode
+                    </button>
+                </div>
+                <!-- 特殊字符编码选项 -->
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="encodeSpecial" class="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary">
+                    <label for="encodeSpecial" class="text-sm text-slate-600">编码特殊字符</label>
+                </div>
+            </div>
+
+            <!-- 右侧输出框 -->
+            <div class="flex-1 flex flex-col gap-2">
+                <label class="text-sm font-medium text-slate-700">结果内容</label>
+                <textarea 
+                    id="outputText" 
+                    class="flex-1 w-full p-4 border border-slate-200 rounded-xl textarea-focus resize-vertical min-h-[280px] text-slate-700"
+                    placeholder="在此输入需要解码的URL编码文本..."
+                ></textarea>
+            </div>
+        </div>
+
+        <!-- 底部说明 -->
+        <div class="mt-6 text-center text-xs text-slate-400">
+            提示：勾选后会编码所有特殊字符（包含URL保留字符如/、?、&等），取消勾选则保留URL结构字符
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const inputText = document.getElementById('inputText');
+        const outputText = document.getElementById('outputText');
+        const encodeBtn = document.getElementById('encodeBtn');
+        const decodeBtn = document.getElementById('decodeBtn');
+        const encodeSpecial = document.getElementById('encodeSpecial');
+
+        // 编码功能：将左侧内容编码后输出到右侧
+        encodeBtn.addEventListener('click', () => {
+            try {
+                const rawText = inputText.value;
+                const encodedText = encodeSpecial.checked ? encodeURIComponent(rawText) : encodeURI(rawText);
+                outputText.value = encodedText;
+            } catch (error) {
+                alert('编码失败：' + error.message);
+            }
+        });
+
+        // 解码功能：将右侧内容解码后输出到左侧
+        decodeBtn.addEventListener('click', () => {
+            try {
+                const encodedText = outputText.value;
+                const decodedText = encodeSpecial.checked ? decodeURIComponent(encodedText) : decodeURI(encodedText);
+                inputText.value = decodedText;
+            } catch (error) {
+                alert('解码失败，请检查输入的内容是否为合法的URL编码：' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
