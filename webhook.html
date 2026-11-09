@@ -1,334 +1,211 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Webhook消息发送器</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#2563eb',
-                        secondary: '#475569',
-                        accent: '#f59e0b',
-                        success: '#10b981',
-                        danger: '#ef4444',
-                        light: '#f8fafc',
-                        dark: '#1e293b'
-                    },
-                    fontFamily: {
-                        inter: ['Inter', 'system-ui', 'sans-serif'],
-                    },
-                }
-            }
-        }
-    </script>
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .content-auto {
-                content-visibility: auto;
-            }
-            .tab-active {
-                @apply border-primary text-primary bg-primary/5;
-            }
-            .input-focus {
-                @apply focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none;
-            }
-            .btn-hover {
-                @apply hover:shadow-lg transition-all duration-200;
-            }
-            .attachment-item {
-                @apply relative w-20 h-20 rounded-lg overflow-hidden border-2 border-dashed border-gray-300 hover:border-primary/70 transition-colors;
-            }
-            .attachment-preview {
-                @apply absolute inset-0 w-full h-full object-cover;
-            }
-            .attachment-remove {
-                @apply absolute -top-2 -right-2 w-6 h-6 rounded-full bg-danger text-white flex items-center justify-center cursor-pointer opacity-0 hover:opacity-100 transition-opacity;
-            }
-            .attachment-item:hover .attachment-remove {
-                opacity: 1;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Webhook 消息发送器 · 小工具</title>
+<link rel="stylesheet" href="common.css">
 </head>
-<body class="font-inter bg-gray-50 min-h-screen flex flex-col">
-    <!-- 顶部导航栏 -->
-    <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-                <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-                    <i class="fa fa-paper-plane text-white text-xl"></i>
-                </div>
-                <h1 class="text-xl font-bold text-gray-800">Webhook 消息发送器</h1>
-            </div>
-            <div class="flex items-center space-x-3">
-                <button id="addWebhookBtn" class="flex items-center space-x-1 px-3 py-2 bg-primary text-white rounded-lg btn-hover">
-                    <i class="fa fa-plus text-sm"></i>
-                    <span>添加 Webhook</span>
-                </button>
-            </div>
-        </div>
-    </header>
-    <!-- 主要内容区域 -->
-    <main class="flex-1 container mx-auto px-4 py-6">
-        <!-- Webhook 标签栏 -->
-        <div class="mb-6">
-            <div class="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-hide">
-                <div id="webhookTabs" class="flex space-x-1">
-                    <!-- 标签将通过JavaScript动态生成 -->
-                </div>
-            </div>
-        </div>
-        <!-- 消息发送区域 -->
-        <div id="messageArea" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hidden">
-            <div class="mb-6 flex gap-4">
-                <!-- 发送选项：纵向排列在左侧，缩小尺寸 -->
-                <div class="p-3 bg-gray-50 rounded-lg w-44 flex-shrink-0">
-                    <h4 class="text-xs font-medium text-gray-700 mb-2">发送选项</h4>
-                    <div class="grid grid-cols-1 gap-2.5">
-                        <div>
-                            <label class="block text-[10px] font-medium text-gray-600 mb-0.5">发送格式</label>
-                            <select id="sendFormat" class="w-full px-2 py-1 border border-gray-300 rounded-lg input-focus text-xs">
-                                <option value="auto">自动检测</option>
-                                <option value="json">JSON格式</option>
-                                <option value="form">表单格式</option>
-                                <option value="urlencoded">URL编码</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-medium text-gray-600 mb-0.5">图片处理</label>
-                            <select id="imageOption" class="w-full px-2 py-1 border border-gray-300 rounded-lg input-focus text-xs">
-                                <option value="compress">自动压缩</option>
-                                <option value="original">保持原图</option>
-                                <option value="link">仅发送链接</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-medium text-gray-600 mb-0.5">超时设置</label>
-                            <select id="timeoutOption" class="w-full px-2 py-1 border border-gray-300 rounded-lg input-focus text-xs">
-                                <option value="10000">10秒</option>
-                                <option value="5000">5秒</option>
-                                <option value="30000">30秒</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <!-- 预设消息区域 -->
-                <div class="flex-1 p-3 bg-gray-50 rounded-lg">
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="text-xs font-medium text-gray-700">预设消息</h4>
-                        <button id="addPresetBtn" class="text-xs px-2 py-1 bg-primary text-white rounded btn-hover flex items-center gap-1">
-                            <i class="fa fa-plus text-xs"></i> 添加预设
-                        </button>
-                    </div>
-                    <div id="presetButtonsContainer" class="flex flex-wrap gap-2">
-                        <!-- 预设消息按钮将动态生成 -->
-                        <span class="text-xs text-gray-400">暂无预设消息，点击添加按钮创建</span>
-                    </div>
-                </div>
-            </div>
-            <div class="mb-4">
-                <label for="messageInput" class="block text-sm font-medium text-gray-700 mb-2">消息内容</label>
-                <div class="relative">
-                    <textarea 
-                        id="messageInput" 
-                        class="w-full min-h-[150px] px-4 py-3 border border-gray-300 rounded-lg input-focus resize-none transition-all"
-                        placeholder="请输入要发送的消息内容..."
-                        rows="4"
-                    ></textarea>
-                    <div class="absolute bottom-3 right-3 text-sm text-gray-400">
-                        <span id="charCount">0</span> / 2000
-                    </div>
-                </div>
-            </div>
-            <!-- 附件区域 -->
-            <div class="mb-6">
-                <div class="flex items-center justify-between mb-2">
-                    <label class="block text-sm font-medium text-gray-700">附件</label>
-                    <span id="attachmentCount" class="text-xs text-gray-500">0张图片</span>
-                </div>
-                <div class="flex items-start space-x-3">
-                    <div id="attachmentsContainer" class="flex flex-wrap gap-3">
-                        <!-- 附件将通过JavaScript动态生成 -->
-                    </div>
-                    <div id="addAttachmentBtn" class="attachment-item flex items-center justify-center cursor-pointer">
-                        <div class="text-center">
-                            <i class="fa fa-image text-gray-400 text-xl mb-1"></i>
-                            <span class="text-xs text-gray-500">添加图片</span>
-                        </div>
-                        <input type="file" id="fileInput" accept="image/*" multiple class="hidden">
-                    </div>
-                </div>
-                <p class="text-xs text-gray-500 mt-2">支持拖拽图片、粘贴剪贴板图片或点击添加图片</p>
-            </div>
-            <!-- 发送按钮 -->
-            <div class="flex justify-between items-center">
-                <div class="text-xs text-gray-500">
-                    <span id="totalSize">总大小: 0KB</span>
-                </div>
-                <div class="flex space-x-3">
-                    <button id="clearBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 btn-hover">
-                        <i class="fa fa-times mr-1"></i> 清空
-                    </button>
-                    <button id="debugBtn" class="px-4 py-2 border border-accent rounded-lg text-accent hover:bg-accent/5 btn-hover">
-                        <i class="fa fa-bug mr-1"></i> 调试
-                    </button>
-                    <button id="sendBtn" class="px-6 py-2 bg-primary text-white rounded-lg btn-hover flex items-center space-x-2">
-                        <i class="fa fa-paper-plane"></i>
-                        <span>发送消息</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-        <!-- 空状态提示 -->
-        <div id="emptyState" class="text-center py-20">
-            <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                <i class="fa fa-link text-gray-400 text-3xl"></i>
-            </div>
-            <h3 class="text-xl font-semibold text-gray-700 mb-2">还没有添加任何 Webhook</h3>
-            <p class="text-gray-500 mb-6">点击右上角的"添加 Webhook"按钮开始使用</p>
-            <button id="emptyAddBtn" class="px-4 py-2 bg-primary text-white rounded-lg btn-hover">
-                <i class="fa fa-plus mr-1"></i> 添加第一个 Webhook
-            </button>
-        </div>
-    </main>
-    <!-- 调试模态框 -->
-    <div id="debugModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
-            <div class="p-6 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-semibold text-gray-800">调试信息</h3>
-                    <button id="closeDebugModalBtn" class="text-gray-400 hover:text-gray-600 transition-colors">
-                        <i class="fa fa-times text-xl"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="p-6 space-y-6">
-                <div>
-                    <h4 class="text-sm font-medium text-gray-700 mb-2">请求信息</h4>
-                    <div id="requestInfo" class="bg-gray-50 p-4 rounded-lg text-sm font-mono overflow-x-auto"></div>
-                </div>
-                <div>
-                    <h4 class="text-sm font-medium text-gray-700 mb-2">响应信息</h4>
-                    <div id="responseInfo" class="bg-gray-50 p-4 rounded-lg text-sm font-mono overflow-x-auto"></div>
-                </div>
-                <div>
-                    <h4 class="text-sm font-medium text-gray-700 mb-2">错误详情</h4>
-                    <div id="errorInfo" class="bg-gray-50 p-4 rounded-lg text-sm font-mono overflow-x-auto"></div>
-                </div>
-            </div>
-            <div class="p-6 border-t border-gray-200 flex justify-end">
-                <button id="copyDebugBtn" class="px-4 py-2 bg-primary text-white rounded-lg btn-hover">
-                    <i class="fa fa-copy mr-1"></i> 复制调试信息
-                </button>
-            </div>
-        </div>
+<body class="top">
+<main class="wrap wide">
+  <header class="head head-row">
+    <a class="back" href="index.html">&#8592; 所有工具</a>
+    <h1 class="title">Webhook 消息发送器</h1>
+    <div class="head-actions">
+      <a class="badge" href="webhooklite.html">简化版</a>
+      <button class="btn sm primary" id="addWebhookBtn">＋ 添加 Webhook</button>
     </div>
-    <!-- 添加 Webhook 模态框 -->
-    <div id="addWebhookModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0" id="modalContent">
-            <div class="p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">添加 Webhook</h3>
-                    <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 transition-colors">
-                        <i class="fa fa-times text-xl"></i>
-                    </button>
-                </div>
-                
-                <form id="webhookForm" class="space-y-4">
-                    <div>
-                        <label for="webhookAlias" class="block text-sm font-medium text-gray-700 mb-1">别名</label>
-                        <input 
-                            type="text" 
-                            id="webhookAlias" 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus"
-                            placeholder="例如：通知系统、日志服务"
-                            required
-                        >
-                    </div>
-                    
-                    <div>
-                        <label for="webhookUrl" class="block text-sm font-medium text-gray-700 mb-1">Webhook 地址</label>
-                        <input 
-                            type="url" 
-                            id="webhookUrl" 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus"
-                            placeholder="https://example.com/webhook"
-                            required
-                        >
-                    </div>
-                    
-                    <div class="flex space-x-3 pt-2">
-                        <button type="button" id="cancelModalBtn" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 btn-hover">
-                            取消
-                        </button>
-                        <button type="submit" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg btn-hover">
-                            保存
-                        </button>
-                    </div>
-                </form>
-            </div>
+  </header>
+
+  <div class="tab-strip" id="webhookTabs"></div>
+
+  <!-- 消息发送区域 -->
+  <div class="card hidden" id="messageArea">
+    <div class="split side">
+      <div class="panel-box">
+        <h2 class="section-label">发送选项</h2>
+        <div class="form-row">
+          <label class="label" for="sendFormat">发送格式</label>
+          <select class="input" id="sendFormat">
+            <option value="auto">自动检测</option>
+            <option value="json">JSON 格式</option>
+            <option value="form">表单格式</option>
+            <option value="urlencoded">URL 编码</option>
+          </select>
         </div>
-    </div>
-    <!-- 添加预设消息模态框 -->
-    <div id="addPresetModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 transform transition-all scale-95 opacity-0" id="presetModalContent">
-            <div class="p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">添加预设消息</h3>
-                    <button id="closePresetModalBtn" class="text-gray-400 hover:text-gray-600 transition-colors">
-                        <i class="fa fa-times text-xl"></i>
-                    </button>
-                </div>
-                
-                <form id="presetForm" class="space-y-4">
-                    <div>
-                        <label for="presetAlias" class="block text-sm font-medium text-gray-700 mb-1">别名</label>
-                        <input 
-                            type="text" 
-                            id="presetAlias" 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus"
-                            placeholder="例如：上线通知、报错提醒"
-                            required
-                        >
-                    </div>
-                    
-                    <div>
-                        <label for="presetMessage" class="block text-sm font-medium text-gray-700 mb-1">消息内容</label>
-                        <textarea 
-                            id="presetMessage" 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg input-focus min-h-[100px]"
-                            placeholder="请输入预设的消息内容..."
-                            required
-                        ></textarea>
-                    </div>
-                    
-                    <div class="flex space-x-3 pt-2">
-                        <button type="button" id="cancelPresetModalBtn" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 btn-hover">
-                            取消
-                        </button>
-                        <button type="submit" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg btn-hover">
-                            保存
-                        </button>
-                    </div>
-                </form>
-            </div>
+        <div class="form-row">
+          <label class="label" for="imageOption">图片处理</label>
+          <select class="input" id="imageOption">
+            <option value="compress">自动压缩</option>
+            <option value="original">保持原图</option>
+            <option value="link">仅发送链接</option>
+          </select>
         </div>
+        <div class="form-row">
+          <label class="label" for="timeoutOption">超时设置</label>
+          <select class="input" id="timeoutOption">
+            <option value="10000">10 秒</option>
+            <option value="5000">5 秒</option>
+            <option value="30000">30 秒</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel-box">
+        <div class="between">
+          <h2 class="section-label" style="margin:0">预设消息</h2>
+          <button class="btn sm" id="addPresetBtn">＋ 添加预设</button>
+        </div>
+        <div class="chips" id="presetButtonsContainer" style="justify-content:flex-start;margin-top:14px">
+          <span class="sub">暂无预设消息，点击添加按钮创建</span>
+        </div>
+        <p class="sub" style="margin-top:14px">点击预设会填充内容并直接发送</p>
+      </div>
     </div>
-    <!-- 成功提示 -->
-    <div id="successToast" class="fixed bottom-4 right-4 bg-success text-white px-4 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-2 z-50">
-        <i class="fa fa-check-circle"></i>
-        <span id="successMessage">消息发送成功！</span>
+
+    <div class="divider"></div>
+
+    <div class="form-row">
+      <label class="label" for="messageInput">消息内容</label>
+      <div class="input-wrap">
+        <textarea class="input" id="messageInput" rows="5" placeholder="请输入要发送的消息内容..."></textarea>
+        <span class="counter"><span id="charCount">0</span> / 2000</span>
+      </div>
     </div>
-    <!-- 错误提示 -->
-    <div id="errorToast" class="fixed bottom-4 right-4 bg-danger text-white px-4 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-2 z-50">
-        <i class="fa fa-exclamation-circle"></i>
-        <span id="errorMessage">发送失败，请重试</span>
+
+    <div class="form-row">
+      <div class="between">
+        <span class="label">附件</span>
+        <span class="sub" id="attachmentCount">0张图片</span>
+      </div>
+      <div class="attachments">
+        <div id="attachmentsContainer" class="contents"></div>
+        <div class="attachment-add" id="addAttachmentBtn">
+          <span class="ico">＋</span>
+          <span>添加图片</span>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" multiple class="hidden">
+      </div>
+      <p class="sub" style="margin-top:10px">支持拖拽图片、粘贴剪贴板图片或点击添加图片</p>
     </div>
+
+    <div class="divider"></div>
+    <div class="between">
+      <span class="sub" id="totalSize">总大小: 0KB</span>
+      <div class="row">
+        <button class="btn sm" id="clearBtn">清空</button>
+        <button class="btn sm" id="debugBtn">调试</button>
+        <button class="btn sm primary" id="sendBtn">发送消息</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 空状态 -->
+  <div class="card" id="emptyState">
+    <div class="empty">
+      <div class="ico">＋</div>
+      <h2>还没有添加任何 Webhook</h2>
+      <p>点击右上角的「添加 Webhook」按钮开始使用</p>
+      <button class="btn primary" id="emptyAddBtn">添加第一个 Webhook</button>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <span>数据仅保存在本机浏览器</span>
+    <a class="linkbtn" href="index.html">返回工具列表</a>
+  </footer>
+</main>
+
+<!-- 调试信息 -->
+<div class="modal hidden" id="debugModal">
+  <div class="modal-box big">
+    <div class="modal-head">
+      <h2>调试信息</h2>
+      <button class="icon-btn" aria-label="关闭" id="closeDebugModalBtn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <span class="label">请求信息</span>
+        <div class="code-block" id="requestInfo"></div>
+      </div>
+      <div class="form-row">
+        <span class="label">响应信息</span>
+        <div class="code-block" id="responseInfo"></div>
+      </div>
+      <div class="form-row">
+        <span class="label">错误详情</span>
+        <div class="code-block" id="errorInfo"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn sm primary" id="copyDebugBtn">复制调试信息</button>
+    </div>
+  </div>
+</div>
+
+<!-- 添加 Webhook -->
+<div class="modal hidden" id="addWebhookModal">
+  <div class="modal-box scale-95 opacity-0" id="modalContent">
+    <div class="modal-head">
+      <h2>添加 Webhook</h2>
+      <button class="icon-btn" aria-label="关闭" id="closeModalBtn">&times;</button>
+    </div>
+    <form id="webhookForm">
+      <div class="modal-body">
+        <div class="form-row">
+          <label class="label" for="webhookAlias">别名</label>
+          <input class="input" type="text" id="webhookAlias" placeholder="例如：通知系统、日志服务" required>
+        </div>
+        <div class="form-row">
+          <label class="label" for="webhookUrl">Webhook 地址</label>
+          <input class="input" type="url" id="webhookUrl" placeholder="https://example.com/webhook" required>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn sm" id="cancelModalBtn">取消</button>
+        <button type="submit" class="btn sm primary">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 添加预设消息 -->
+<div class="modal hidden" id="addPresetModal">
+  <div class="modal-box scale-95 opacity-0" id="presetModalContent">
+    <div class="modal-head">
+      <h2>添加预设消息</h2>
+      <button class="icon-btn" aria-label="关闭" id="closePresetModalBtn">&times;</button>
+    </div>
+    <form id="presetForm">
+      <div class="modal-body">
+        <div class="form-row">
+          <label class="label" for="presetAlias">别名</label>
+          <input class="input" type="text" id="presetAlias" placeholder="例如：上线通知、报错提醒" required>
+        </div>
+        <div class="form-row">
+          <label class="label" for="presetMessage">消息内容</label>
+          <textarea class="input" id="presetMessage" rows="4" placeholder="请输入预设的消息内容..." required></textarea>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn sm" id="cancelPresetModalBtn">取消</button>
+        <button type="submit" class="btn sm primary">保存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 提示消息 -->
+<div class="toast success translate-y-20 opacity-0" id="successToast">
+  <span class="ico">&#10003;</span>
+  <span id="successMessage">消息发送成功！</span>
+</div>
+<div class="toast error translate-y-20 opacity-0" id="errorToast">
+  <span class="ico">!</span>
+  <span id="errorMessage">发送失败，请重试</span>
+</div>
+
     <script>
         class WebhookSender {
             constructor() {
@@ -461,17 +338,13 @@ ${errorInfo}
                 tabsContainer.innerHTML = '';
                 this.webhooks.forEach(webhook => {
                     const tab = document.createElement('div');
-                    tab.className = `px-4 py-2 border border-gray-300 rounded-t-lg cursor-pointer text-sm font-medium transition-all duration-200 ${
-                        this.currentWebhook === webhook.id ? 'tab-active' : 'hover:bg-gray-50'
+                    tab.className = `wh-tab ${
+                        this.currentWebhook === webhook.id ? 'is-active' : ''
                     }`;
                     tab.dataset.id = webhook.id;
                     tab.innerHTML = `
-                        <div class="flex items-center space-x-2">
-                            <span>${webhook.alias}</span>
-                            <button class="text-gray-400 hover:text-danger transition-colors" onclick="webhookSender.deleteWebhook('${webhook.id}', event)">
-                                <i class="fa fa-times text-xs"></i>
-                            </button>
-                        </div>
+                        <span>${webhook.alias}</span>
+                        <button class="x" aria-label="删除" onclick="webhookSender.deleteWebhook('${webhook.id}', event)">&times;</button>
                     `;
                     
                     tab.addEventListener('click', () => this.selectWebhook(webhook.id));
@@ -701,14 +574,12 @@ ${errorInfo}
                 if (!dragHint) {
                     dragHint = document.createElement('div');
                     dragHint.id = 'dragHint';
-                    dragHint.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+                    dragHint.className = 'modal';
                     dragHint.innerHTML = `
-                        <div class="bg-white rounded-xl p-8 text-center shadow-2xl">
-                            <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                                <i class="fa fa-cloud-upload text-primary text-2xl"></i>
-                            </div>
-                            <h3 class="text-xl font-semibold text-gray-800 mb-2">拖拽图片到这里</h3>
-                            <p class="text-gray-500">支持JPG、PNG等图片格式</p>
+                        <div class="empty" style="background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:32px">
+                            <div class="ico">＋</div>
+                            <h2>拖拽图片到这里</h2>
+                            <p>支持 JPG、PNG 等图片格式</p>
                         </div>
                     `;
                     document.body.appendChild(dragHint);
@@ -782,7 +653,7 @@ ${errorInfo}
                 
                 this.attachments.forEach(attachment => {
                     const item = document.createElement('div');
-                    item.className = 'attachment-item relative';
+                    item.className = 'attachment-item';
                     
                     const img = document.createElement('img');
                     img.src = attachment.url;
@@ -796,7 +667,7 @@ ${errorInfo}
                     const removeBtn = document.createElement('div');
                     removeBtn.className = 'attachment-remove';
                     removeBtn.onclick = () => this.removeAttachment(attachment.id);
-                    removeBtn.innerHTML = '<i class="fa fa-times text-xs"></i>';
+                    removeBtn.innerHTML = '&times;';
                     
                     item.appendChild(img);
                     item.appendChild(removeBtn);
@@ -835,7 +706,7 @@ ${errorInfo}
                 // 显示发送状态
                 const sendBtn = document.getElementById('sendBtn');
                 const originalText = sendBtn.innerHTML;
-                sendBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> <span>发送中...</span>';
+                sendBtn.innerHTML = '发送中…';
                 sendBtn.disabled = true;
                 
                 // 创建控制器用于超时处理
@@ -1064,16 +935,16 @@ ${JSON.stringify(jsonBody, null, 2)}`;
                 container.innerHTML = '';
                 
                 if (this.presets.length === 0) {
-                    container.innerHTML = '<span class="text-xs text-gray-400">暂无预设消息，点击添加按钮创建</span>';
+                    container.innerHTML = '<span class="sub">暂无预设消息，点击添加按钮创建</span>';
                     return;
                 }
                 
                 this.presets.forEach(preset => {
                     const btn = document.createElement('button');
-                    btn.className = 'text-xs px-2 py-1 bg-white border border-gray-200 rounded hover:border-primary hover:text-primary transition-colors btn-hover flex items-center';
+                    btn.className = 'preset';
                     btn.innerHTML = `
                         <span>${preset.alias}</span>
-                        <span class="delete-preset ml-1 w-3.5 h-3.5 rounded-full bg-danger/70 text-white flex items-center justify-center hover:bg-danger transition-colors text-[10px]">×</span>
+                        <span class="del delete-preset">&times;</span>
                     `;
                     btn.onclick = () => {
                         // 填充预设消息并直接发送

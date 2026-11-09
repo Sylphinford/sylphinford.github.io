@@ -1,99 +1,142 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>小工具 · sylphinford</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-  <style>
-    body {
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-      min-height: 100vh;
-    }
-    .card {
-      transition: transform 0.25s ease, box-shadow 0.25s ease;
-    }
-    .card:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 20px 40px -10px rgba(59, 130, 246, 0.4);
-    }
-    .card:hover .card-icon {
-      transform: scale(1.15);
-    }
-    .card-icon {
-      transition: transform 0.25s ease;
-    }
-  </style>
-</head>
-<body class="text-slate-100">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>小工具集合 · sylphinford</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  /* 首页沿用原有的深色大格子布局，与工具页的卡片风格相互呼应 */
+  body{
+    display:block;
+    padding:56px 20px 40px;
+    background:linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    color:#e8eaee;
+  }
+  .home{ width:100%; max-width:880px; margin:0 auto; }
 
-  <!-- 头部 -->
-  <header class="max-w-4xl mx-auto px-6 pt-16 pb-10 text-center">
-    <h1 class="text-4xl font-bold tracking-tight">
-      <i class="fa fa-wrench text-blue-400 mr-2"></i>
+  .hero{ text-align:center; }
+  .hero h1{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    margin:0;
+    font-size:clamp(1.9rem, 4.5vw, 2.4rem);
+    font-weight:700; letter-spacing:.01em;
+    color:#f8fafc;
+  }
+  .hero h1 svg{ width:34px; height:34px; flex:none; color:#5b8cff; transform:rotate(-28deg); }
+  .hero .site{ margin:10px 0 0; font-size:1.05rem; color:#94a3b8; }
+  .hero .rule{
+    width:100px; height:5px; margin:22px auto 46px;
+    border-radius:999px; background:#3b82f6;
+  }
+
+  .tiles{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:24px;
+  }
+  .tile{
+    display:block;
+    min-height:180px;
+    padding:26px 24px;
+    border:1px solid rgba(148,163,184,.16);
+    border-radius:16px;
+    background:rgba(30,41,59,.55);
+    color:inherit;
+    transition:transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+  }
+  .tile:hover{
+    transform:translateY(-6px);
+    border-color:#3b82f6;
+    box-shadow:0 20px 40px -10px rgba(59,130,246,.4);
+  }
+  .tile .ico{
+    display:block;
+    width:30px; height:30px;
+    margin-bottom:20px;
+    transition:transform .25s ease;
+  }
+  .tile:hover .ico{ transform:scale(1.15); }
+  .tile h2{
+    margin:0 0 10px;
+    font-size:1.05rem; font-weight:700;
+    color:#f8fafc;
+  }
+  .tile p{
+    margin:0;
+    font-size:.86rem; line-height:1.65;
+    color:#94a3b8;
+  }
+
+  .home-foot{
+    margin-top:34px;
+    text-align:center;
+    font-size:.78rem;
+    color:#64748b;
+  }
+
+  @media (max-width:900px){ .tiles{ grid-template-columns:repeat(2, 1fr); } }
+  @media (max-width:600px){ .tiles{ grid-template-columns:1fr; } .tile{ min-height:150px; } }
+</style>
+</head>
+<body>
+<main class="home">
+  <header class="hero">
+    <h1>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+      </svg>
       小工具集合
     </h1>
-    <p class="mt-3 text-slate-400 text-lg">sylphinford.github.io</p>
-    <div class="mt-6 w-24 h-1 bg-blue-500 rounded-full mx-auto"></div>
+    <p class="site">sylphinford.github.io</p>
+    <div class="rule"></div>
   </header>
 
-  <!-- 工具卡片 -->
-  <main class="max-w-4xl mx-auto px-6 pb-16">
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div class="tiles">
+    <a class="tile" href="webhook.html">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#5b8cff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M22 2 11 13"/><path d="M22 2 15 22 11 13 2 9z"/>
+      </svg>
+      <h2>Webhook 消息发送器</h2>
+      <p>通过 Webhook 向群聊/频道发送消息</p>
+    </a>
 
-      <!-- Webhook 消息发送器 -->
-      <a href="webhook.html" class="card block bg-slate-800/60 backdrop-blur rounded-2xl p-6 border border-slate-700 hover:border-blue-500">
-        <div class="card-icon text-3xl mb-4">
-          <i class="fa fa-paper-plane text-blue-400"></i>
-        </div>
-        <h2 class="text-lg font-semibold text-white">Webhook 消息发送器</h2>
-        <p class="mt-2 text-sm text-slate-400">通过 Webhook 向群聊/频道发送消息</p>
-      </a>
+    <a class="tile" href="webhooklite.html">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5z"/>
+      </svg>
+      <h2>Webhook 简化版</h2>
+      <p>轻量版 Webhook 消息发送工具</p>
+    </a>
 
-      <!-- Webhook 简化版 -->
-      <a href="webhooklite.html" class="card block bg-slate-800/60 backdrop-blur rounded-2xl p-6 border border-slate-700 hover:border-blue-500">
-        <div class="card-icon text-3xl mb-4">
-          <i class="fa fa-comment-o text-cyan-400"></i>
-        </div>
-        <h2 class="text-lg font-semibold text-white">Webhook 简化版</h2>
-        <p class="mt-2 text-sm text-slate-400">轻量版 Webhook 消息发送工具</p>
-      </a>
+    <a class="tile" href="URLcode.html">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+      </svg>
+      <h2>URL 编码/解码</h2>
+      <p>URL 编码与解码转换工具</p>
+    </a>
 
-      <!-- URL 编码/解码 -->
-      <a href="URLcode.html" class="card block bg-slate-800/60 backdrop-blur rounded-2xl p-6 border border-slate-700 hover:border-blue-500">
-        <div class="card-icon text-3xl mb-4">
-          <i class="fa fa-link text-emerald-400"></i>
-        </div>
-        <h2 class="text-lg font-semibold text-white">URL 编码/解码</h2>
-        <p class="mt-2 text-sm text-slate-400">URL 编码与解码转换工具</p>
-      </a>
+    <a class="tile" href="mousetest.html">
+      <svg class="ico" viewBox="0 0 24 24" fill="#fbbf24" aria-hidden="true">
+        <path d="M5 2.5v17l4.3-4.2 2.7 5.7 2.7-1.3-2.7-5.6h6.5z"/>
+      </svg>
+      <h2>鼠标功能测试</h2>
+      <p>测试鼠标按键、滚轮及移动</p>
+    </a>
 
-      <!-- 鼠标功能测试 -->
-      <a href="mousetest.html" class="card block bg-slate-800/60 backdrop-blur rounded-2xl p-6 border border-slate-700 hover:border-blue-500">
-        <div class="card-icon text-3xl mb-4">
-          <i class="fa fa-mouse-pointer text-amber-400"></i>
-        </div>
-        <h2 class="text-lg font-semibold text-white">鼠标功能测试</h2>
-        <p class="mt-2 text-sm text-slate-400">测试鼠标按键、滚轮及移动</p>
-      </a>
+    <a class="tile" href="timer.html">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#fb7185" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>
+      </svg>
+      <h2>计时器</h2>
+      <p>倒计时 / 正计时 / 秒表</p>
+    </a>
+  </div>
 
-      <!-- 计时器 -->
-      <a href="timer.html" class="card block bg-slate-800/60 backdrop-blur rounded-2xl p-6 border border-slate-700 hover:border-blue-500">
-        <div class="card-icon text-3xl mb-4">
-          <i class="fa fa-clock-o text-rose-400"></i>
-        </div>
-        <h2 class="text-lg font-semibold text-white">计时器</h2>
-        <p class="mt-2 text-sm text-slate-400">倒计时 / 正计时 / 秒表</p>
-      </a>
-
-    </div>
-  </main>
-
-  <!-- 页脚 -->
-  <footer class="text-center pb-8 text-slate-500 text-sm">
-    <p>&copy; sylphinford · GitHub Pages</p>
-  </footer>
-
+  <footer class="home-foot">&copy; sylphinford &middot; GitHub Pages</footer>
+</main>
 </body>
 </html>
