@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>图片格式转换 · 小工具</title>
+<link rel="stylesheet" href="common.css">
+<style>
+  .drop{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    min-height:150px; padding:22px 16px;
+    border:1.5px dashed var(--line); border-radius:16px;
+    background:var(--bg); color:var(--muted);
+    text-align:center; cursor:pointer;
+    transition:border-color .15s, background .15s, color .15s;
+  }
+  .drop:hover, .drop.is-over{ border-color:var(--accent); background:var(--accent-weak); color:var(--accent); }
+  .drop:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  .drop svg{ width:30px; height:30px; }
+  .drop strong{ font-size:.92rem; font-weight:600; color:var(--text); }
+  .drop.is-over strong{ color:var(--accent); }
+  .drop span{ font-size:.78rem; }
+
+  .fmt-chips{ justify-content:flex-start; margin-top:10px; }
+  .fmt-hint{ margin-top:14px; }
+  .options{ margin-top:18px; }
+
+  .chip:disabled{ opacity:.45; cursor:not-allowed; }
+  .chip:disabled:hover{ border-color:var(--line); color:var(--muted); }
+
+  input[type=range]{ width:100%; accent-color:var(--accent); }
+  input[type=color]{
+    width:140px; height:38px; padding:3px;
+    border:1px solid var(--line); border-radius:10px;
+    background:var(--bg); cursor:pointer;
+  }
+  #qualityVal{ color:var(--accent); }
+
+  .list-head{ margin-bottom:4px; }
+  .files{ list-style:none; margin:0; padding:0; }
+  .file{
+    display:grid; grid-template-columns:44px minmax(0,1fr) auto 30px;
+    align-items:center; gap:12px;
+    padding:10px 0; border-bottom:1px solid var(--line);
+  }
+  .file:last-child{ border-bottom:none; }
+  .thumb{
+    display:block; width:44px; height:44px;
+    border:1px solid var(--line); border-radius:10px;
+    object-fit:cover; background:var(--track);
+  }
+  .file-name{
+    font-size:.86rem; font-weight:600;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .file-sub{
+    margin-top:2px; font-size:.74rem; color:var(--muted);
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .file-sub.is-ok{ color:var(--ok); }
+  .file-sub.is-err{ color:var(--danger); }
+  .dl{ flex:none; color:var(--accent); font-weight:600; }
+</style>
+</head>
+<body class="top">
+<main class="wrap mid">
+  <header class="head">
+    <a class="back" href="index.html">&#8592; 所有工具</a>
+    <h1 class="title">图片格式转换</h1>
+  </header>
+
+  <div class="card">
+    <div class="drop" id="drop" role="button" tabindex="0" aria-label="选择或拖入图片">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <strong>拖拽图片到这里</strong>
+      <span>或点击选择文件 · 支持批量添加</span>
+    </div>
+    <input type="file" id="filePicker" accept="image/*" multiple hidden>
+
+    <div class="divider"></div>
+
+    <span class="label">输出格式</span>
+    <div class="chips fmt-chips" id="fmtChips">
+      <button type="button" class="chip is-active" data-fmt="png">PNG</button>
+      <button type="button" class="chip" data-fmt="jpeg">JPEG</button>
+      <button type="button" class="chip" data-fmt="webp">WebP</button>
+      <button type="button" class="chip" data-fmt="bmp">BMP</button>
+      <button type="button" class="chip" data-fmt="ico">ICO</button>
+    </div>
+
+    <div class="options">
+      <div class="form-row hidden" id="qualityRow">
+        <label class="label" for="quality">压缩质量 <span id="qualityVal">92%</span></label>
+        <input type="range" id="quality" min="0.1" max="1" step="0.01" value="0.92">
+      </div>
+      <div class="form-row hidden" id="bgRow">
+        <label class="label" for="bgColor">填充背景色（用于不透明格式）</label>
+        <input type="color" id="bgColor" value="#ffffff">
+      </div>
+    </div>
+
+    <p class="sub fmt-hint" id="fmtHint"></p>
+  </div>
+
+  <div class="card hidden" id="listCard">
+    <div class="between list-head">
+      <span class="label">共 <span id="count">0</span> 张</span>
+      <button type="button" class="linkbtn" id="clearBtn">清空</button>
+    </div>
+    <ul class="files" id="files"></ul>
+    <div class="btn-row">
+      <button type="button" class="btn primary" id="convertBtn">开始转换</button>
+      <button type="button" class="btn" id="downloadAllBtn" disabled>下载全部</button>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <span>图片仅在本地处理，不会上传</span>
+    <span>动图仅取第一帧 · 重编码会移除 EXIF</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var ICO_SIZES = [16, 32, 48, 64, 128, 256];
+  var FORMATS = {
+    png:  { type: 'image/png',  ext: 'png' },
+    jpeg: { type: 'image/jpeg', ext: 'jpg' },
+    webp: { type: 'image/webp', ext: 'webp' },
+    bmp:  { ext: 'bmp' },
+    ico:  { ext: 'ico' }
+  };
+  var HINTS = {
+    png:  'PNG 无损压缩，支持透明通道。',
+    jpeg: 'JPEG 有损压缩，不支持透明，透明区域会填充背景色。',
+    webp: 'WebP 通常比 PNG / JPEG 更小，支持透明。',
+    bmp:  'BMP 不压缩，文件较大且不支持透明，透明区域会填充背景色。',
+    ico:  'ICO 会自动生成 16 / 32 / 48 / 64 / 128 / 256 px 六种尺寸，适合作为网站图标。'
+  };
+
+  var state = {
+    items: [],
+    format: 'png',
+    quality: 0.92,
+    bg: '#ffffff',
+    running: false,
+    seq: 0
+  };
+
+  var drop = document.getElementById('drop');
+  var filePicker = document.getElementById('filePicker');
+  var fmtChips = document.getElementById('fmtChips');
+  var qualityRow = document.getElementById('qualityRow');
+  var bgRow = document.getElementById('bgRow');
+  var quality = document.getElementById('quality');
+  var qualityVal = document.getElementById('qualityVal');
+  var bgColor = document.getElementById('bgColor');
+  var fmtHint = document.getElementById('fmtHint');
+  var listCard = document.getElementById('listCard');
+  var filesEl = document.getElementById('files');
+  var countEl = document.getElementById('count');
+  var convertBtn = document.getElementById('convertBtn');
+  var downloadAllBtn = document.getElementById('downloadAllBtn');
+  var clearBtn = document.getElementById('clearBtn');
+
+  var toastEl = null;
+  var toastTimer = 0;
+
+  function toast(message, kind) {
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.setAttribute('role', 'status');
+      document.body.appendChild(toastEl);
+    }
+    toastEl.className = 'toast' + (kind ? ' ' + kind : '');
+    toastEl.textContent = message;
+    toastEl.style.opacity = '0';
+    toastEl.style.transform = 'translateY(12px)';
+    void toastEl.offsetWidth;
+    toastEl.style.opacity = '1';
+    toastEl.style.transform = 'translateY(0)';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      toastEl.style.opacity = '0';
+      toastEl.style.transform = 'translateY(12px)';
+    }, 2600);
+  }
+
+  function fmtSize(bytes) {
+    if (!bytes) return '0 B';
+    var units = ['B', 'KB', 'MB', 'GB'];
+    var i = 0;
+    var n = bytes;
+    while (n >= 1024 && i < units.length - 1) {
+      n /= 1024;
+      i++;
+    }
+    return (n >= 100 || i === 0 ? Math.round(n) : n.toFixed(1)) + ' ' + units[i];
+  }
+
+  function isImage(file) {
+    return (file.type && file.type.indexOf('image/') === 0) ||
+      /\.(png|jpe?g|gif|webp|bmp|avif|ico|svg|tiff?)$/i.test(file.name);
+  }
+
+  function canEncodeWebP() {
+    try {
+      return document.createElement('canvas').toDataURL('image/webp').indexOf('data:image/webp') === 0;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function updateOptions() {
+    var fmt = state.format;
+    qualityRow.classList.toggle('hidden', !(fmt === 'jpeg' || fmt === 'webp'));
+    bgRow.classList.toggle('hidden', !(fmt === 'jpeg' || fmt === 'bmp'));
+    fmtHint.textContent = HINTS[fmt];
+    Array.prototype.forEach.call(fmtChips.querySelectorAll('.chip'), function (button) {
+      button.classList.toggle('is-active', button.dataset.fmt === fmt);
+    });
+  }
+
+  function syncButtons() {
+    var hasDone = state.items.some(function (item) { return item.status === 'done'; });
+    convertBtn.disabled = state.running || state.items.length === 0;
+    clearBtn.disabled = state.running;
+    downloadAllBtn.disabled = state.running || !hasDone;
+  }
+
+  function setRunning(on, label) {
+    state.running = on;
+    convertBtn.textContent = on ? (label || '转换中…') : '开始转换';
+    quality.disabled = on;
+    bgColor.disabled = on;
+    Array.prototype.forEach.call(fmtChips.querySelectorAll('.chip'), function (button) {
+      button.disabled = on || button.dataset.unsupported === '1';
+    });
+    syncButtons();
+  }
+
+  function renderItem(item) {
+    var li = document.createElement('li');
+    li.className = 'file';
+    li.dataset.id = String(item.id);
+
+    var img = document.createElement('img');
+    img.className = 'thumb';
+    img.src = item.thumbUrl;
+    img.alt = '';
+    img.loading = 'lazy';
+
+    var info = document.createElement('div');
+    var name = document.createElement('div');
+    name.className = 'file-name';
+    name.textContent = item.file.name;
+    name.title = item.file.name;
+    var sub = document.createElement('div');
+    sub.className = 'file-sub';
+    info.appendChild(name);
+    info.appendChild(sub);
+
+    var dl = document.createElement('a');
+    dl.className = 'linkbtn dl';
+    dl.textContent = '下载';
+    dl.dataset.act = 'download';
+    dl.hidden = true;
+
+    var remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'icon-btn';
+    remove.dataset.act = 'remove';
+    remove.setAttribute('aria-label', '移除');
+    remove.textContent = '×';
+
+    li.appendChild(img);
+    li.appendChild(info);
+    li.appendChild(dl);
+    li.appendChild(remove);
+    updateRow(li, item);
+    return li;
+  }
+
+  function updateRow(li, item) {
+    var sub = li.querySelector('.file-sub');
+    var dl = li.querySelector('[data-act="download"]');
+    sub.className = 'file-sub';
+    dl.hidden = true;
+    dl.removeAttribute('href');
+    dl.removeAttribute('download');
+
+    if (item.status === 'working') {
+      sub.textContent = '转换中…';
+    } else if (item.status === 'error') {
+      sub.classList.add('is-err');
+      sub.textContent = '失败：' + item.error;
+    } else if (item.status === 'done') {
+      sub.classList.add('is-ok');
+      var dims = item.outExt === 'ico'
+        ? item.width + '×' + item.height + ' → ICO 16–256 px'
+        : item.width + '×' + item.height + ' → ' + item.outWidth + '×' + item.outHeight;
+      sub.textContent = '✓ ' + dims + ' · ' + fmtSize(item.file.size) + ' → ' + fmtSize(item.blob ? item.blob.size : 0);
+      dl.hidden = false;
+      dl.href = item.outUrl;
+      dl.setAttribute('download', item.outName);
+    } else {
+      var type = item.file.type ? item.file.type.replace('image/', '').toUpperCase() : '未知格式';
+      sub.textContent = fmtSize(item.file.size) + ' · ' + type;
+    }
+  }
+
+  function updateRowById(item) {
+    var li = filesEl.querySelector('.file[data-id="' + item.id + '"]');
+    if (li) updateRow(li, item);
+  }
+
+  function renderList() {
+    filesEl.textContent = '';
+    state.items.forEach(function (item) {
+      filesEl.appendChild(renderItem(item));
+    });
+    countEl.textContent = String(state.items.length);
+    listCard.classList.toggle('hidden', state.items.length === 0);
+    syncButtons();
+  }
+
+  function revokeItem(item) {
+    if (item.thumbUrl) {
+      URL.revokeObjectURL(item.thumbUrl);
+      item.thumbUrl = '';
+    }
+    if (item.outUrl) {
+      URL.revokeObjectURL(item.outUrl);
+      item.outUrl = '';
+    }
+  }
+
+  function addFiles(fileList) {
+    if (state.running) {
+      toast('正在转换，请稍候', 'error');
+      return;
+    }
+    var incoming = Array.prototype.slice.call(fileList || []);
+    if (!incoming.length) return;
+
+    var added = 0;
+    var rejected = 0;
+    incoming.forEach(function (file) {
+      if (!isImage(file)) {
+        rejected++;
+        return;
+      }
+      var duplicate = state.items.some(function (item) {
+        return item.file.name === file.name &&
+          item.file.size === file.size &&
+          item.file.lastModified === file.lastModified;
+      });
+      if (duplicate) return;
+      state.items.push({
+        id: ++state.seq,
+        file: file,
+        thumbUrl: URL.createObjectURL(file),
+        status: 'idle',
+        error: '',
+        blob: null,
+        outUrl: '',
+        outName: '',
+        outExt: '',
+        width: 0,
+        height: 0,
+        outWidth: 0,
+        outHeight: 0
+      });
+      added++;
+    });
+
+    if (added) {
+      renderList();
+      toast('已添加 ' + added + ' 张图片', 'success');
+    }
+    if (rejected) toast('已忽略非图片文件', 'error');
+  }
+
+  function removeItem(item) {
+    revokeItem(item);
+    state.items = state.items.filter(function (entry) { return entry !== item; });
+    renderList();
+  }
+
+  function downloadUrl(url, name) {
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  function decodeImage(file) {
+    if (window.createImageBitmap) {
+      return createImageBitmap(file).catch(function () {
+        return decodeViaElement(file);
+      });
+    }
+    return decodeViaElement(file);
+  }
+
+  function decodeViaElement(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        reject(new Error('无法解码该图片，浏览器可能不支持此格式（如 HEIC）'));
+      };
+      img.src = url;
+    });
+  }
+
+  function canvasToBlob(canvas, type, qualityValue) {
+    return new Promise(function (resolve, reject) {
+      canvas.toBlob(function (blob) {
+        if (blob) resolve(blob);
+        else reject(new Error('编码失败，图片可能过大'));
+      }, type, qualityValue);
+    });
+  }
+
+  function encodeBMP(imageData) {
+    var w = imageData.width;
+    var h = imageData.height;
+    var data = imageData.data;
+    var rowSize = (w * 3 + 3) & ~3;
+    var pixelSize = rowSize * h;
+    var buffer = new ArrayBuffer(54 + pixelSize);
+    var view = new DataView(buffer);
+    var bytes = new Uint8Array(buffer);
+
+    view.setUint16(0, 0x4D42, true);
+    view.setUint32(2, buffer.byteLength, true);
+    view.setUint32(10, 54, true);
+    view.setUint32(14, 40, true);
+    view.setInt32(18, w, true);
+    view.setInt32(22, h, true);
+    view.setUint16(26, 1, true);
+    view.setUint16(28, 24, true);
+    view.setUint32(34, pixelSize, true);
+    view.setInt32(38, 2835, true);
+    view.setInt32(42, 2835, true);
+
+    for (var y = 0; y < h; y++) {
+      var src = (h - 1 - y) * w * 4;
+      var dst = 54 + y * rowSize;
+      for (var x = 0; x < w; x++) {
+        var i = src + x * 4;
+        bytes[dst++] = data[i + 2];
+        bytes[dst++] = data[i + 1];
+        bytes[dst++] = data[i];
+      }
+    }
+    return buffer;
+  }
+
+  function encodeDIB(imageData) {
+    var w = imageData.width;
+    var h = imageData.height;
+    var data = imageData.data;
+    var xorSize = w * h * 4;
+    var andRow = ((w + 31) >> 5) << 2;
+    var andSize = andRow * h;
+    var buffer = new ArrayBuffer(40 + xorSize + andSize);
+    var view = new DataView(buffer);
+    var bytes = new Uint8Array(buffer);
+
+    view.setUint32(0, 40, true);
+    view.setInt32(4, w, true);
+    view.setInt32(8, h * 2, true);
+    view.setUint16(12, 1, true);
+    view.setUint16(14, 32, true);
+    view.setUint32(20, xorSize + andSize, true);
+
+    var pos = 40;
+    for (var y = h - 1; y >= 0; y--) {
+      var row = y * w * 4;
+      for (var x = 0; x < w; x++) {
+        var i = row + x * 4;
+        bytes[pos++] = data[i + 2];
+        bytes[pos++] = data[i + 1];
+        bytes[pos++] = data[i];
+        bytes[pos++] = data[i + 3];
+      }
+    }
+    return buffer;
+  }
+
+  async function encodeICO(bitmap) {
+    var images = [];
+    for (var s = 0; s < ICO_SIZES.length; s++) {
+      var size = ICO_SIZES[s];
+      var canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      var ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('无法创建画布');
+
+      var scale = Math.min(size / bitmap.width, size / bitmap.height);
+      var dw = Math.max(1, Math.round(bitmap.width * scale));
+      var dh = Math.max(1, Math.round(bitmap.height * scale));
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(bitmap, Math.round((size - dw) / 2), Math.round((size - dh) / 2), dw, dh);
+
+      if (size >= 256) {
+        var png = await canvasToBlob(canvas, 'image/png');
+        images.push({ size: size, data: new Uint8Array(await png.arrayBuffer()) });
+      } else {
+        images.push({ size: size, data: new Uint8Array(encodeDIB(ctx.getImageData(0, 0, size, size))) });
+      }
+    }
+
+    var headerSize = 6 + 16 * images.length;
+    var total = headerSize;
+    images.forEach(function (image) { total += image.data.length; });
+
+    var buffer = new ArrayBuffer(total);
+    var view = new DataView(buffer);
+    var bytes = new Uint8Array(buffer);
+    view.setUint16(0, 0, true);
+    view.setUint16(2, 1, true);
+    view.setUint16(4, images.length, true);
+
+    var offset = headerSize;
+    images.forEach(function (image, index) {
+      var pos = 6 + index * 16;
+      var dim = image.size >= 256 ? 0 : image.size;
+      bytes[pos] = dim;
+      bytes[pos + 1] = dim;
+      view.setUint16(pos + 4, 1, true);
+      view.setUint16(pos + 6, 32, true);
+      view.setUint32(pos + 8, image.data.length, true);
+      view.setUint32(pos + 12, offset, true);
+      bytes.set(image.data, offset);
+      offset += image.data.length;
+    });
+
+    return new Blob([buffer], { type: 'image/x-icon' });
+  }
+
+  async function encodeBitmap(bitmap) {
+    var fmt = state.format;
+    var w = bitmap.width;
+    var h = bitmap.height;
+    if (!w || !h) throw new Error('图片尺寸无效');
+
+    if (fmt === 'ico') {
+      return {
+        blob: await encodeICO(bitmap),
+        ext: FORMATS.ico.ext,
+        width: w,
+        height: h,
+        outWidth: ICO_SIZES[ICO_SIZES.length - 1],
+        outHeight: ICO_SIZES[ICO_SIZES.length - 1]
+      };
+    }
+
+    if (w * h > 268000000) throw new Error('图片过大，超出浏览器画布上限');
+
+    var canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    var ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('无法创建画布，图片可能过大');
+
+    if (fmt === 'jpeg' || fmt === 'bmp') {
+      ctx.fillStyle = state.bg;
+      ctx.fillRect(0, 0, w, h);
+    }
+    ctx.drawImage(bitmap, 0, 0);
+
+    if (fmt === 'bmp') {
+      var data = ctx.getImageData(0, 0, w, h);
+      return {
+        blob: new Blob([encodeBMP(data)], { type: 'image/bmp' }),
+        ext: FORMATS.bmp.ext,
+        width: w,
+        height: h,
+        outWidth: w,
+        outHeight: h
+      };
+    }
+
+    var qualityValue = (fmt === 'jpeg' || fmt === 'webp') ? state.quality : undefined;
+    var blob = await canvasToBlob(canvas, FORMATS[fmt].type, qualityValue);
+    if (fmt === 'webp' && blob.type !== 'image/webp') {
+      throw new Error('当前浏览器不支持 WebP 编码');
+    }
+    return {
+      blob: blob,
+      ext: FORMATS[fmt].ext,
+      width: w,
+      height: h,
+      outWidth: w,
+      outHeight: h
+    };
+  }
+
+  function outputName(file, ext) {
+    var base = file.name.replace(/\.[^.\\/]+$/, '') || 'image';
+    return base + '.' + ext;
+  }
+
+  async function convertAll() {
+    if (state.running || !state.items.length) return;
+
+    var total = state.items.length;
+    setRunning(true);
+
+    var ok = 0;
+    var fail = 0;
+    for (var index = 0; index < total; index++) {
+      var item = state.items[index];
+      if (!item) continue;
+
+      setRunning(true, '转换中 ' + (index + 1) + '/' + total);
+      item.status = 'working';
+      item.error = '';
+      updateRowById(item);
+      if (item.outUrl) {
+        URL.revokeObjectURL(item.outUrl);
+        item.outUrl = '';
+        item.blob = null;
+      }
+
+      var bitmap = null;
+      try {
+        bitmap = await decodeImage(item.file);
+        var result = await encodeBitmap(bitmap);
+        item.blob = result.blob;
+        item.outUrl = URL.createObjectURL(result.blob);
+        item.outExt = result.ext;
+        item.outName = outputName(item.file, result.ext);
+        item.width = result.width;
+        item.height = result.height;
+        item.outWidth = result.outWidth;
+        item.outHeight = result.outHeight;
+        item.status = 'done';
+        ok++;
+      } catch (err) {
+        item.status = 'error';
+        item.error = (err && err.message) ? err.message : '转换失败';
+        fail++;
+      } finally {
+        if (bitmap && typeof bitmap.close === 'function') bitmap.close();
+      }
+
+      updateRowById(item);
+      syncButtons();
+      await new Promise(function (resolve) { setTimeout(resolve, 0); });
+    }
+
+    setRunning(false);
+    toast(fail ? '完成 ' + ok + ' 张，失败 ' + fail + ' 张' : '转换完成：' + ok + ' 张', fail ? 'error' : 'success');
+  }
+
+  drop.addEventListener('click', function () {
+    filePicker.click();
+  });
+  drop.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      filePicker.click();
+    }
+  });
+  ['dragenter', 'dragover'].forEach(function (type) {
+    drop.addEventListener(type, function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      drop.classList.add('is-over');
+    });
+  });
+  drop.addEventListener('dragleave', function (event) {
+    if (!drop.contains(event.relatedTarget)) drop.classList.remove('is-over');
+  });
+  drop.addEventListener('drop', function (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    drop.classList.remove('is-over');
+    addFiles(event.dataTransfer.files);
+  });
+  window.addEventListener('dragover', function (event) { event.preventDefault(); });
+  window.addEventListener('drop', function (event) { event.preventDefault(); });
+
+  filePicker.addEventListener('change', function () {
+    addFiles(filePicker.files);
+    filePicker.value = '';
+  });
+
+  fmtChips.addEventListener('click', function (event) {
+    var button = event.target.closest('.chip');
+    if (!button || button.disabled || state.running) return;
+    state.format = button.dataset.fmt;
+    updateOptions();
+  });
+
+  quality.addEventListener('input', function () {
+    state.quality = Number(quality.value);
+    qualityVal.textContent = Math.round(state.quality * 100) + '%';
+  });
+
+  bgColor.addEventListener('input', function () {
+    state.bg = bgColor.value;
+  });
+
+  filesEl.addEventListener('click', function (event) {
+    var action = event.target.closest('[data-act]');
+    if (!action) return;
+    var row = action.closest('.file');
+    if (!row) return;
+    var item = state.items.find(function (entry) { return String(entry.id) === row.dataset.id; });
+    if (!item) return;
+
+    if (state.running) {
+      toast('正在转换，请稍候', 'error');
+      return;
+    }
+    if (action.dataset.act === 'remove') {
+      removeItem(item);
+    } else if (action.dataset.act === 'download' && item.outUrl) {
+      downloadUrl(item.outUrl, item.outName);
+    }
+  });
+
+  clearBtn.addEventListener('click', function () {
+    if (state.running) return;
+    state.items.forEach(revokeItem);
+    state.items = [];
+    renderList();
+  });
+
+  convertBtn.addEventListener('click', convertAll);
+
+  downloadAllBtn.addEventListener('click', function () {
+    var ready = state.items.filter(function (item) { return item.status === 'done' && item.outUrl; });
+    if (!ready.length) return;
+    toast('开始下载 ' + ready.length + ' 个文件', 'success');
+    ready.forEach(function (item, index) {
+      setTimeout(function () { downloadUrl(item.outUrl, item.outName); }, index * 300);
+    });
+  });
+
+  window.addEventListener('beforeunload', function () {
+    state.items.forEach(revokeItem);
+  });
+
+  if (!canEncodeWebP()) {
+    var webpChip = fmtChips.querySelector('[data-fmt="webp"]');
+    webpChip.disabled = true;
+    webpChip.dataset.unsupported = '1';
+    webpChip.title = '当前浏览器不支持 WebP 编码';
+  }
+
+  updateOptions();
+  qualityVal.textContent = Math.round(state.quality * 100) + '%';
+})();
+</script>
+</body>
+</html>
